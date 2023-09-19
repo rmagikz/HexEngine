@@ -24,11 +24,21 @@ static const char* memory_tag_strings[MEMORY_TAG_MAX_TAGS] =
     "RENDERER   ",
 };
 
+static b8 is_initialized = FALSE;
 static struct memory_stats stats;
 
-void memory_initialize()
+b8 memory_initialize()
 {
+    if (is_initialized == TRUE)
+    {
+        HERROR("memory_initialize() called more than once!");
+        return FALSE;
+    }
+    HINFO("Memory subsystem initialized.");
+
     platform_zero_memory(&stats, sizeof(stats));
+
+    return TRUE;
 }
 
 void memory_shutdown()

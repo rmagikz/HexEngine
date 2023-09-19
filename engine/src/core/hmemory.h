@@ -16,7 +16,7 @@ typedef enum memory_tag
     MEMORY_TAG_MAX_TAGS
 } memory_tag;
 
-HAPI void memory_initialize();
+HAPI b8 memory_initialize();
 
 HAPI void memory_shutdown();
 

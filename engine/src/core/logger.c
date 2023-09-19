@@ -6,11 +6,18 @@
 #include <stdarg.h>
 #include <string.h>
 
-
-const char* log_level_strings[6] = {"[FATAL]", "[ERROR]", "[WARN]", "[INFO]", "[DEBUG]", "[TRACE]"};
+static b8 is_initialized = FALSE;
+static const char* log_level_strings[6] = {"[FATAL]", "[ERROR]", "[WARN]", "[INFO]", "[DEBUG]", "[TRACE]"};
 
 b8 logger_initialize()
 {
+    if (is_initialized == TRUE)
+    {
+        HERROR("logger_initialize() called more than once!");
+        return FALSE;
+    }
+    HINFO("Logger subsystem initialized.");
+
     // TODO: create log file.
     return TRUE;
 }

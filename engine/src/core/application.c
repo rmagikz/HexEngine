@@ -6,6 +6,7 @@
 #include "platform/platform.h"
 #include "core/hmemory.h"
 #include "core/event.h"
+#include "core/input.h"
 
 typedef struct application_state
 {
@@ -23,6 +24,9 @@ typedef struct application_state
 static b8 initialized = FALSE;
 static application_state app_state;
 
+b8 application_on_event(u16 code, void* sender, void* listener_inst, event_context context);
+b8 application_on_key(u16 code, void* sender, void* listener_inst, event_context context);
+
 b8 application_initialize(program* program_inst)
 {
     if (initialized)
@@ -35,11 +39,26 @@ b8 application_initialize(program* program_inst)
     app_state.is_running = TRUE;
     app_state.is_suspended = FALSE;
 
+    // Initialize subsystems.
+    if (!logger_initialize())
+    {
+        HERROR("Logger system failed to initialize.");
+    }
+
+    if (!input_initialize())
+    {
+        HERROR("Input system failed to initialize. Application cannot continue.");
+        return FALSE;
+    }
+
     if (!event_initialize())
     {
         HERROR("Event system failed to initialize. Application cannot continue.");
         return FALSE;
     }
+
+    event_register(EVENT_APPLICATION_QUIT, 0, application_on_event);
+    event_register(EVENT_KEY_PRESSED, 0, application_on_key);
 
     // Initialize platform.
     if (!platform_initialize(
@@ -91,14 +110,52 @@ b8 application_run()
                 app_state.is_running = FALSE;
                 break;
             }
+
+            input_update(0);
         }
     }
 
     app_state.is_running = FALSE;
 
+    event_unregister(EVENT_APPLICATION_QUIT, 0, application_on_event);
+    event_unregister(EVENT_KEY_PRESSED, 0, application_on_key);
+
+    // Shutdown subsystems.
+    logger_shutdown();
+    input_shutdown();
     event_shutdown();
 
     platform_shutdown(&app_state.platform);
 
     return TRUE;
+}
+
+b8 application_on_event(u16 code, void* sender, void* listener_inst, event_context context)
+{
+    switch (code)
+    {
+        case EVENT_APPLICATION_QUIT:
+            HINFO("EVENT_APPLICATION_QUIT received, shutting down");
+            app_state.is_running = FALSE;
+            return TRUE;
+    }
+
+    return FALSE;
+}
+
+b8 application_on_key(u16 code, void* sender, void* listener_inst, event_context context)
+{
+    if (code == EVENT_KEY_PRESSED)
+    {
+        u16 key_code = context.data.u16[0];
+        if (key_code == KEY_ESCAPE)
+        {
+            event_context data = {};
+            event_post(EVENT_APPLICATION_QUIT, 0, data);
+
+            return TRUE;
+        }
+    }
+
+    return FALSE;
 }

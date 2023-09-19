@@ -10,9 +10,8 @@ extern b8 create_program(program* out_program);
 // Main entry point.
 int main(void)
 {
-    // Initialize subsystems.
+    // Initialize memory subsystem.
     memory_initialize();
-    logger_initialize();
 
     program program_inst;
     if (!create_program(&program_inst))
@@ -40,7 +39,6 @@ int main(void)
     }
 
     memory_shutdown();
-    logger_shutdown();
 
     return 0;
 }

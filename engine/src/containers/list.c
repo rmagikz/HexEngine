@@ -8,7 +8,7 @@ void* _list_create(u64 count, u64 stride)
     u64 header_size = LIST_FIELD_LENGTH * sizeof(u64);
     u64 list_size = count * stride;
 
-    u64* new_list = hallocate(header_size * list_size, MEMORY_TAG_LIST);
+    u64* new_list = hallocate(header_size + list_size, MEMORY_TAG_LIST);
     hset_memory(new_list, 0, header_size + list_size);
 
     new_list[LIST_CAPACITY] = count;
@@ -44,7 +44,7 @@ void* _list_resize(void* list)
     u64 stride = list_stride(list);
 
     // copy from old list into new list
-    void* temp = _list_create(count * LIST_RESIZE_FACTOR, stride);
+    void* temp = _list_create(list_capacity(list) * LIST_RESIZE_FACTOR, stride);
     hcopy_memory(temp, list, count * stride);
 
     _list_field_set(temp, LIST_COUNT, count);

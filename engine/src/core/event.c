@@ -1,5 +1,6 @@
 #include "core/event.h"
 #include "core/hmemory.h"
+#include "core/logger.h"
 
 #include "containers/list.h"
 
@@ -28,8 +29,10 @@ b8 event_initialize()
 {
     if (is_initialized == TRUE)
     {
+        HERROR("event_initialize() called more than once!");
         return FALSE;
     }
+    HINFO("Event subsystem initialized.");
     
     hzero_memory(&state, sizeof(state));
 

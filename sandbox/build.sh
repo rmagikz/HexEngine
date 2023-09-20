@@ -4,7 +4,7 @@ set echo on
 
 mkdir -p ../bin
 
-cFilenames=$(find . -type f -name ".c")
+cFilenames=$(find . -type f -name "*.c")
 
 assembly="sandbox"
 compilerFlags="-g -fdeclspec -fPIC"
@@ -14,4 +14,5 @@ linkerFlags="-L../bin/ -lengine -Wl,-rpath,."
 defines="-D_DEBUG -DHIMPORT"
 
 echo "Building $assembly..."
-clang $cFilenames $compilerFlags -o ../bin/lib$assembly.so $defines $includeFlags $linkerFlags
+echo clang $cFilenames $compilerFlags -o ../bin/$assembly $defines $includeFlags $linkerFlags
+clang $cFilenames $compilerFlags -o ../bin/$assembly $defines $includeFlags $linkerFlags

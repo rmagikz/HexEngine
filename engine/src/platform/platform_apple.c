@@ -1,6 +1,6 @@
 #include "platform/platform.h"
 
-#ifdef KPLATFORM_APPLE
+#ifdef HPLATFORM_APPLE
 
 
 

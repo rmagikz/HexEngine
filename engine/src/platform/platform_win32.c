@@ -246,7 +246,10 @@ LRESULT CALLBACK win32_process_message(HWND hwnd, u32 msg, WPARAM w_param, LPARA
                     button = BUTTON_LEFT;
                     break;
             }
-            input_process_button(button, pressed);
+            if (button != BUTTON_MAX_BUTTONS)
+            {
+                input_process_button(button, pressed);
+            }
             break;
     }
 

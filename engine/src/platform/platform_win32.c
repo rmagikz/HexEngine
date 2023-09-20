@@ -2,12 +2,16 @@
 
 #if HPLATFORM_WINDOWS
 
+#define GLEW_STATIC
+
 #include <core/logger.h>
 #include <core/input.h>
 
 #include <windows.h>
 #include <windowsx.h>
 #include <stdlib.h>
+
+#include <GL/glew.h>
 
 typedef struct internal_state
 {
@@ -17,6 +21,7 @@ typedef struct internal_state
 
 static f64 clock_frequency;
 static LARGE_INTEGER start_time;
+static HGLRC gl_context;
 
 LRESULT CALLBACK win32_process_message(HWND hwnd, u32 msg, WPARAM w_param, LPARAM l_param);
 
@@ -189,11 +194,53 @@ LRESULT CALLBACK win32_process_message(HWND hwnd, u32 msg, WPARAM w_param, LPARA
 {
     switch (msg)
     {
+        case WM_CREATE:
+		{
+            PIXELFORMATDESCRIPTOR pfd =
+            {
+                sizeof(PIXELFORMATDESCRIPTOR),
+                1,
+                PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER,    //Flags
+                PFD_TYPE_RGBA,        // The kind of framebuffer. RGBA or palette.
+                32,                   // Colordepth of the framebuffer.
+                0, 0, 0, 0, 0, 0,
+                0,
+                0,
+                0,
+                0, 0, 0, 0,
+                24,                   // Number of bits for the depthbuffer
+                8,                    // Number of bits for the stencilbuffer
+                0,                    // Number of Aux buffers in the framebuffer.
+                PFD_MAIN_PLANE,
+                0,
+                0, 0, 0
+            };
+
+            HDC ourWindowHandleToDeviceContext = GetDC(hwnd);
+
+            int  letWindowsChooseThisPixelFormat;
+            letWindowsChooseThisPixelFormat = ChoosePixelFormat(ourWindowHandleToDeviceContext, &pfd); 
+            SetPixelFormat(ourWindowHandleToDeviceContext,letWindowsChooseThisPixelFormat, &pfd);
+
+            gl_context = wglCreateContext(ourWindowHandleToDeviceContext);
+            wglMakeCurrent (ourWindowHandleToDeviceContext, gl_context);
+
+            MessageBoxA(0,(char*)glGetString(GL_VERSION), "OPENGL VERSION",0);
+
+            if (glewInit() != GLEW_OK)
+            {
+                HFATAL("Could not initialize OpenGL extension entry points!");
+                return -1;
+            }
+            
+            return 0;
+		} break;
         case WM_ERASEBKGND:
             return 1;
         case WM_CLOSE:
             return 0;
         case WM_DESTROY:
+            wglDeleteContext(gl_context);
             PostQuitMessage(0);
             return 0;
         case WM_SIZE:

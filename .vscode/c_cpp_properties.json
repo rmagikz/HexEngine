@@ -3,7 +3,8 @@
         {
             "name": "Win32",
             "includePath": [
-                "${workspaceFolder}/engine/src/**"
+                "${workspaceFolder}/engine/src/**",
+                "${workspaceFolder}/engine/vendor/glew-2.2.0/include/**"
             ],
             "defines": [
                 "_DEBUG",
@@ -20,7 +21,8 @@
         {
             "name": "Linux",
             "includePath": [
-                "${workspaceFolder}/engine/src/**"
+                "${workspaceFolder}/engine/src/**",
+                "${workspaceFolder}/engine/vendor/glew-2.2.0/include/**"
             ],
             "defines": [
                 "_DEBUG",

@@ -5,6 +5,7 @@
         "cmath": "c",
         "intrin.h": "c",
         "tuple": "cpp",
-        "utility": "cpp"
+        "utility": "cpp",
+        "glew.h": "c"
     }
 }

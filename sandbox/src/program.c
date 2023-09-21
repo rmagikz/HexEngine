@@ -5,7 +5,7 @@
 
 b8 program_initialize (struct program* program_inst)
 {
-    HDEBUG("program_initialize called successfully.");
+    HINFO("program_initialize called successfully.");
     return TRUE;
 }
 

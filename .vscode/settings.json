@@ -6,6 +6,10 @@
         "intrin.h": "c",
         "tuple": "cpp",
         "utility": "cpp",
-        "glew.h": "c"
+        "glew.h": "c",
+        "opengl_backend.h": "c",
+        "renderer_backend.h": "c",
+        "renderer_types.inl": "c",
+        "opengl_types.inl": "c"
     }
 }

@@ -1,12 +1,15 @@
 #include "application.h"
 #include "program_types.h"
 
-#include "logger.h"
-
 #include "platform/platform.h"
+
+#include "core/logger.h"
 #include "core/hmemory.h"
 #include "core/event.h"
 #include "core/input.h"
+#include "core/clock.h"
+
+#include "renderer/renderer_frontend.h"
 
 typedef struct application_state
 {
@@ -15,6 +18,8 @@ typedef struct application_state
 
     i16 width;
     i16 height;
+
+    clock clock;
     f64 last_time;
 
     program* program_inst;
@@ -72,10 +77,17 @@ b8 application_initialize(program* program_inst)
         return FALSE;
     }
 
+    // Initialize renderer.
+    if (!renderer_initialize(program_inst->app_config.name, &app_state.platform))
+    {
+        HFATAL("Failed to initialize renderer. Shutting down.");
+        return FALSE;
+    }
+
     // Initialize client program.
     if (!app_state.program_inst->initialize(app_state.program_inst))
     {
-        HFATAL("Program failed to initialize.");
+        HFATAL("Program failed to initialize. Shutting Down.");
         return FALSE;
     }
 
@@ -88,6 +100,16 @@ b8 application_initialize(program* program_inst)
 b8 application_run()
 {
     HINFO(get_memory_usage_str());
+
+    clock_start(&app_state.clock);
+    clock_update(&app_state.clock);
+
+    app_state.last_time = app_state.clock.elapsed;
+
+    f64 running_time = 0;
+    f64 frame_count = 0;
+    f64 target_frame_seconds = 1.0f / 60;
+
     while (app_state.is_running)
     {
         if (!platform_pump_messages(&app_state.platform))
@@ -97,21 +119,50 @@ b8 application_run()
 
         if (!app_state.is_suspended)
         {
-            if (!app_state.program_inst->update(app_state.program_inst, (f32)0))
+            clock_update(&app_state.clock);
+            f64 current_time = app_state.clock.elapsed;
+            f64 delta = current_time - app_state.last_time;
+            f64 frame_start_time = platform_get_absolute_time();
+
+            if (!app_state.program_inst->update(app_state.program_inst, (f32)delta))
             {
                 HFATAL("Program update failed, shutting down.");
                 app_state.is_running = FALSE;
                 break;
             }
 
-            if (!app_state.program_inst->render(app_state.program_inst, (f32)0))
+            if (!app_state.program_inst->render(app_state.program_inst, (f32)delta))
             {
                 HFATAL("Program render failed, shutting down.");
                 app_state.is_running = FALSE;
                 break;
             }
 
-            input_update(0);
+            render_packet packet;
+            packet.delta_time = delta;
+            renderer_draw_frame(&packet);
+
+            f64 frame_end_time = platform_get_absolute_time();
+            f64 frame_elapsed_time = frame_end_time - frame_start_time;
+            running_time += frame_elapsed_time;
+            f64 remaining_seconds = target_frame_seconds - frame_elapsed_time;
+
+            if (remaining_seconds > 0)
+            {
+                u64 remaining_ms = remaining_seconds * 1000;
+
+                b8 limit_frames = FALSE;
+                if (remaining_ms > 0 && limit_frames)
+                {
+                    platform_sleep(remaining_ms - 1);
+                }
+
+                frame_count++;
+            }
+
+            input_update(delta);
+
+            app_state.last_time = current_time;
         }
     }
 
@@ -122,8 +173,10 @@ b8 application_run()
 
     // Shutdown subsystems.
     logger_shutdown();
-    input_shutdown();
     event_shutdown();
+    input_shutdown();
+
+    renderer_shutdown();
 
     platform_shutdown(&app_state.platform);
 

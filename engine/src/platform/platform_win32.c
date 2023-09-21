@@ -2,16 +2,12 @@
 
 #if HPLATFORM_WINDOWS
 
-#define GLEW_STATIC
-
 #include <core/logger.h>
 #include <core/input.h>
 
 #include <windows.h>
 #include <windowsx.h>
 #include <stdlib.h>
-
-#include <GL/glew.h>
 
 typedef struct internal_state
 {
@@ -21,9 +17,10 @@ typedef struct internal_state
 
 static f64 clock_frequency;
 static LARGE_INTEGER start_time;
-static HGLRC gl_context;
+static HDC window_device_handle;
 
 LRESULT CALLBACK win32_process_message(HWND hwnd, u32 msg, WPARAM w_param, LPARAM l_param);
+HDC get_window_device_handle(HWND hwnd);
 
 b8 platform_initialize(platform_state* platform_state, const char* application_name, i32 x, i32 y, i32 width, i32 height)
 {
@@ -195,52 +192,37 @@ LRESULT CALLBACK win32_process_message(HWND hwnd, u32 msg, WPARAM w_param, LPARA
     switch (msg)
     {
         case WM_CREATE:
-		{
-            PIXELFORMATDESCRIPTOR pfd =
             {
-                sizeof(PIXELFORMATDESCRIPTOR),
-                1,
-                PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER,    //Flags
-                PFD_TYPE_RGBA,        // The kind of framebuffer. RGBA or palette.
-                32,                   // Colordepth of the framebuffer.
-                0, 0, 0, 0, 0, 0,
-                0,
-                0,
-                0,
-                0, 0, 0, 0,
-                24,                   // Number of bits for the depthbuffer
-                8,                    // Number of bits for the stencilbuffer
-                0,                    // Number of Aux buffers in the framebuffer.
-                PFD_MAIN_PLANE,
-                0,
-                0, 0, 0
-            };
+                PIXELFORMATDESCRIPTOR pfd = // Creating pixel format descriptor for OpenGL
+                {
+                    sizeof(PIXELFORMATDESCRIPTOR),
+                    1,
+                    PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER,    //Flags
+                    PFD_TYPE_RGBA,        // The kind of framebuffer. RGBA or palette.
+                    32,                   // Colordepth of the framebuffer.
+                    0, 0, 0, 0, 0, 0,
+                    0,
+                    0,
+                    0,
+                    0, 0, 0, 0,
+                    24,                   // Number of bits for the depthbuffer
+                    8,                    // Number of bits for the stencilbuffer
+                    0,                    // Number of Aux buffers in the framebuffer.
+                    PFD_MAIN_PLANE,
+                    0,
+                    0, 0, 0
+                };
 
-            HDC ourWindowHandleToDeviceContext = GetDC(hwnd);
+                window_device_handle = GetDC(hwnd);
 
-            int  letWindowsChooseThisPixelFormat;
-            letWindowsChooseThisPixelFormat = ChoosePixelFormat(ourWindowHandleToDeviceContext, &pfd); 
-            SetPixelFormat(ourWindowHandleToDeviceContext,letWindowsChooseThisPixelFormat, &pfd);
-
-            gl_context = wglCreateContext(ourWindowHandleToDeviceContext);
-            wglMakeCurrent (ourWindowHandleToDeviceContext, gl_context);
-
-            MessageBoxA(0,(char*)glGetString(GL_VERSION), "OPENGL VERSION",0);
-
-            if (glewInit() != GLEW_OK)
-            {
-                HFATAL("Could not initialize OpenGL extension entry points!");
-                return -1;
-            }
-            
-            return 0;
-		} break;
+                int pixel_format = ChoosePixelFormat(window_device_handle, &pfd); 
+                SetPixelFormat(window_device_handle,pixel_format, &pfd);
+            } break;
         case WM_ERASEBKGND:
             return 1;
         case WM_CLOSE:
             return 0;
         case WM_DESTROY:
-            wglDeleteContext(gl_context);
             PostQuitMessage(0);
             return 0;
         case WM_SIZE:
@@ -301,6 +283,32 @@ LRESULT CALLBACK win32_process_message(HWND hwnd, u32 msg, WPARAM w_param, LPARA
     }
 
     return DefWindowProcA(hwnd, msg, w_param, l_param);
+}
+void* platform_opengl_context_create()
+{
+    // Create OpenGL context and make current.
+    HGLRC gl_context = wglCreateContext(window_device_handle);
+
+    if (gl_context == 0)
+    {
+        int result = GetLastError();
+        HFATAL("Failed to create OpenGL context, shutting down. Error code: %d", result);
+        return 0;
+    }
+
+    if (wglMakeCurrent(window_device_handle, gl_context) == 0)
+    {
+        int result = GetLastError();
+        HFATAL("Failed to make OpenGL context current, shutting down. Error code: %d", result);
+        return 0;
+    }
+
+    return gl_context;
+}
+
+void platform_opengl_context_delete(void* gl_context)
+{
+    wglDeleteContext(gl_context);
 }
 
 #endif // HPLATFORM_WINDOWS

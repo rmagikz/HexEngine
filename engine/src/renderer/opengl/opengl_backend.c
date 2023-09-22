@@ -2,11 +2,15 @@
 
 #include "opengl_types.inl"
 
-#include <core/logger.h>
+#include "core/logger.h"
 
-#include <platform/platform.h>
+#include "platform/platform.h"
 
 static opengl_context context;
+
+#ifdef _DEBUG
+void GLAPIENTRY opengl_debug_callback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam);
+#endif
 
 b8 opengl_backend_initialize(renderer_backend* backend, const char* application_name, platform_state* platform_state)
 {
@@ -23,7 +27,24 @@ b8 opengl_backend_initialize(renderer_backend* backend, const char* application_
         return FALSE;
     }
 
-    HINFO("OpenGL renderer context initialized.");
+    GLint version_major;
+    GLint version_minor;
+    glGetIntegerv(GL_MAJOR_VERSION, &version_major);
+    glGetIntegerv(GL_MINOR_VERSION, &version_minor);
+
+    if (version_major < 3 || version_minor < 3)
+    {
+        HFATAL("OpenGL version not met. Minimum version required: 3.3");
+        return FALSE;
+    }
+
+#ifdef _DEBUG
+    glEnable(GL_DEBUG_OUTPUT);
+    glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS); // TODO: Verify if needed.
+    glDebugMessageCallback(opengl_debug_callback, 0);
+#endif
+
+    HINFO("OpenGL renderer context initialized. Version: %s", glGetString(GL_VERSION));
     return TRUE;
 }
 
@@ -46,3 +67,75 @@ b8 opengl_backend_end_frame(renderer_backend* backend, f32 delta_time)
 {
     return TRUE;
 }
+
+
+#ifdef _DEBUG // OpenGL Debug Callback
+const char* source_string(GLenum source)
+{
+    switch (source)
+    {
+        case GL_DEBUG_SOURCE_API:
+            return "[OpenGL]";
+        case GL_DEBUG_SOURCE_WINDOW_SYSTEM:
+            return "[Window System]";
+        case GL_DEBUG_SOURCE_SHADER_COMPILER:
+            return "[Shader]";
+        case GL_DEBUG_SOURCE_THIRD_PARTY:
+            return "[Third Party]";
+        case GL_DEBUG_SOURCE_APPLICATION:
+            return "[Application]";
+        case GL_DEBUG_SOURCE_OTHER:
+            return "[Other]";
+        default:
+            return "[Unknown]";
+    };
+}
+const char* type_string(GLenum type)
+{
+    switch (type)
+    {
+        case GL_DEBUG_TYPE_ERROR:
+            return "Type Error";
+        case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR:
+            return "Deprecated Behavior";
+        case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR:
+            return "Undefined Behavior";
+        case GL_DEBUG_TYPE_PORTABILITY:
+            return "Portability";
+        case GL_DEBUG_TYPE_PERFORMANCE:
+            return "Performance";
+        case GL_DEBUG_TYPE_MARKER:
+            return "Marker";
+        case GL_DEBUG_TYPE_PUSH_GROUP:
+            return "Push Group";
+        case GL_DEBUG_TYPE_POP_GROUP:
+            return "Pop Group";
+        case GL_DEBUG_TYPE_OTHER:
+            return "Other";
+        default:
+            return "Unknown";
+    };
+}
+const char* severity_string(GLenum severity)
+{
+    switch (severity)
+    {
+        case GL_DEBUG_SEVERITY_HIGH:
+            return "HIGH";
+        case GL_DEBUG_SEVERITY_MEDIUM:
+            return "MEDIUM";
+        case GL_DEBUG_SEVERITY_LOW:
+            return "LOW";
+        case GL_DEBUG_SEVERITY_NOTIFICATION:
+            return "NOTIFICATION";
+        default:
+            return "UNKNOWN";
+    };
+}
+
+void GLAPIENTRY opengl_debug_callback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam)
+{
+    // TODO: Remove severity? Force all to be errors.
+    HERROR("%s OpenGL Error %d: Severity: %s, Type: %s, Message: %s", source_string(source), type, severity_string(severity), type_string(type), message);
+}
+#endif

@@ -14,12 +14,12 @@ typedef struct internal_state
 {
     HINSTANCE h_instance;
     HWND hwnd;
-    HDC window_device_handle;
     HGLRC gl_context;
 } internal_state;
 
 static f64 clock_frequency;
 static LARGE_INTEGER start_time;
+static HDC window_device_handle;
 
 LRESULT CALLBACK win32_process_message(HWND hwnd, u32 msg, WPARAM w_param, LPARAM l_param);
 
@@ -214,10 +214,10 @@ LRESULT CALLBACK win32_process_message(HWND hwnd, u32 msg, WPARAM w_param, LPARA
                     0, 0, 0
                 };
 
-                state->window_device_handle = GetDC(hwnd);
+                window_device_handle = GetDC(hwnd);
 
-                i32 pixel_format = ChoosePixelFormat(state->window_device_handle, &pfd); 
-                SetPixelFormat(state->window_device_handle,pixel_format, &pfd);
+                i32 pixel_format = ChoosePixelFormat(window_device_handle, &pfd); 
+                SetPixelFormat(window_device_handle,pixel_format, &pfd);
             } break;
         case WM_ERASEBKGND:
             return 1;
@@ -299,7 +299,7 @@ void* platform_opengl_context_create(platform_state* platform_state)
     internal_state* state = (internal_state*)platform_state->internal_state;
 
     // Create OpenGL context and make current.
-    state->gl_context = wglCreateContext(state->window_device_handle);
+    state->gl_context = wglCreateContext(window_device_handle);
 
     if (state->gl_context == 0)
     {
@@ -308,7 +308,7 @@ void* platform_opengl_context_create(platform_state* platform_state)
         return 0;
     }
 
-    if (wglMakeCurrent(state->window_device_handle, state->gl_context) == 0)
+    if (wglMakeCurrent(window_device_handle, state->gl_context) == 0)
     {
         int result = GetLastError();
         HFATAL("Failed to make OpenGL context current, shutting down. Error code: %d", result);
@@ -327,7 +327,9 @@ void platform_opengl_context_delete(platform_state* platform_state)
 
 b8 platform_swap_buffers(platform_state* platform_state)
 {
-    return SwapBuffers(state->window_device_handle);
+    internal_state* state = (internal_state*)platform_state->internal_state;
+
+    return SwapBuffers(window_device_handle);
 }
 
 #endif // HPLATFORM_WINDOWS

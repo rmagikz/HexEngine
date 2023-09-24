@@ -25,6 +25,8 @@ b8 logger_initialize()
 void logger_shutdown()
 {
     // TODO: clean up logger.
+
+    HINFO("Logger subsystem shut down successfully.");
 }
 
 void logger_log(log_level level, const char* message, ...)

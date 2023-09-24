@@ -13,7 +13,7 @@ b8 renderer_initialize(const char* application_name, struct platform_state* plat
     renderer_backend_create(RENDERER_BACKEND_OPENGL, platform_state, backend);
     backend->frame_number = 0;
 
-    if (!backend->initialize(backend, application_name, platform_state))
+    if (!backend->initialize(backend, application_name))
     {
         HFATAL("Renderer backend failed to initialzie. Shutting down.");
         return FALSE;
@@ -31,7 +31,11 @@ void renderer_shutdown()
 
 void renderer_on_resized(u16 width, u16 height)
 {
-
+    if (backend)
+    {
+        backend->resized(backend, width, height);
+        return;
+    }
 }
 
 b8 renderer_begin_frame(f32 delta_time)
@@ -41,8 +45,9 @@ b8 renderer_begin_frame(f32 delta_time)
 
 b8 renderer_end_frame(f32 delta_time)
 {
+    b8 result = backend->end_frame(backend, delta_time);
     backend->frame_number++;
-    return backend->begin_frame(backend, delta_time);
+    return result;
 }
 
 b8 renderer_draw_frame(render_packet* packet)

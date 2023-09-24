@@ -4,7 +4,7 @@
 
 struct platform_state;
 
-b8 opengl_backend_initialize(renderer_backend* backend, const char* application_name, struct platform_state* platform_state);
+b8 opengl_backend_initialize(renderer_backend* backend, const char* application_name);
 
 void opengl_backend_shutdown(renderer_backend* backend);
 

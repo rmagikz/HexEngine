@@ -4,6 +4,7 @@
 
 #include <core/logger.h>
 #include <core/input.h>
+#include <core/event.h>
 
 #include <windows.h>
 #include <windowsx.h>
@@ -215,22 +216,31 @@ LRESULT CALLBACK win32_process_message(HWND hwnd, u32 msg, WPARAM w_param, LPARA
 
                 window_device_handle = GetDC(hwnd);
 
-                int pixel_format = ChoosePixelFormat(window_device_handle, &pfd); 
+                i32 pixel_format = ChoosePixelFormat(window_device_handle, &pfd); 
                 SetPixelFormat(window_device_handle,pixel_format, &pfd);
             } break;
         case WM_ERASEBKGND:
             return 1;
         case WM_CLOSE:
-            return 0;
+            {
+                event_context event = {};
+                event_post(EVENT_APPLICATION_QUIT, 0, event);
+                return 1;
+            }
         case WM_DESTROY:
             PostQuitMessage(0);
             return 0;
         case WM_SIZE:
-            // RECT r;
-            // GetClientRect(hwnd, &r);
-            // u32 width = r.right - r.left;
-            // u32 height = r.bottom - r.top;
-            break;
+            {
+                RECT r;
+                GetClientRect(hwnd, &r);
+
+                event_context event = {};
+                event.data.u16[0] = (u16)(r.right - r.left);
+                event.data.u16[1] = (u16)(r.bottom - r.top);
+
+                event_post(EVENT_RESIZED, 0, event);
+            } break;
         case WM_KEYDOWN:
         case WM_SYSKEYDOWN:
         case WM_KEYUP:
@@ -309,6 +319,11 @@ void* platform_opengl_context_create()
 void platform_opengl_context_delete(void* gl_context)
 {
     wglDeleteContext(gl_context);
+}
+
+b8 platform_swap_buffers()
+{
+    return SwapBuffers(window_device_handle);
 }
 
 #endif // HPLATFORM_WINDOWS

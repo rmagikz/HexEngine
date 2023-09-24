@@ -45,6 +45,8 @@ b8 memory_initialize()
 void memory_shutdown()
 {
     // TODO: eventual cleanup.
+
+    HINFO("Memory subsystem shut down successfully.");
 }
 
 void* hallocate(u64 size, memory_tag tag)
@@ -131,6 +133,8 @@ char* get_memory_usage_str()
 
         offset += snprintf(buffer + offset, 8000, " %s: %.2f%s\n", memory_tag_strings[i], amount, unit);
     }
+
+    offset += snprintf(buffer + offset, 8000, "Total memory usage (including this string): %lldB", stats.total_allocated += string_length(buffer));
 
     char* out_string = string_duplicate(buffer);
     return out_string;

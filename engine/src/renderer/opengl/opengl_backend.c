@@ -3,18 +3,21 @@
 #include "opengl_types.inl"
 
 #include "core/logger.h"
+#include "core/event.h"
+#include "core/application.h"
 
 #include "platform/platform.h"
 
 static opengl_context context;
+static b8 size_dirty_flag = FALSE;
 
 #ifdef _DEBUG
 void GLAPIENTRY opengl_debug_callback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam);
 #endif
 
-b8 opengl_backend_initialize(renderer_backend* backend, const char* application_name, platform_state* platform_state)
+b8 opengl_backend_initialize(renderer_backend* backend, const char* application_name)
 {
-    context.instance = platform_opengl_context_create(platform_state);
+    context.instance = platform_opengl_context_create();
     if (context.instance == 0)
     {
         HFATAL("OpenGL context creation failed.");
@@ -44,30 +47,43 @@ b8 opengl_backend_initialize(renderer_backend* backend, const char* application_
     glDebugMessageCallback(opengl_debug_callback, 0);
 #endif
 
-    HINFO("OpenGL renderer context initialized. Version: %s", glGetString(GL_VERSION));
+    glClearColor(0.2f, 0.2f, 0.2, 1.0f);
+
+    HINFO("OpenGL renderer initialized. Version: %s", glGetString(GL_VERSION));
     return TRUE;
 }
 
 void opengl_backend_shutdown(renderer_backend* backend)
 {
     platform_opengl_context_delete(context.instance);
+
+    HINFO("OpenGL renderer shut down successfully.");
 }
 
 void opengl_backend_on_resized(renderer_backend* backend, u16 width, u16 height)
 {
-
+    glViewport(0,0,width,height);
+    size_dirty_flag = TRUE;
 }
 
 b8 opengl_backend_begin_frame(renderer_backend* backend, f32 delta_time)
 {
-    return TRUE;
+    if (size_dirty_flag)
+    {
+        // Not rendering this frame since a resize just happened.
+        size_dirty_flag = FALSE;
+        return FALSE;
+    }
+
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    return platform_swap_buffers();
 }
 
 b8 opengl_backend_end_frame(renderer_backend* backend, f32 delta_time)
 {
     return TRUE;
 }
-
 
 #ifdef _DEBUG // OpenGL Debug Callback
 const char* source_string(GLenum source)

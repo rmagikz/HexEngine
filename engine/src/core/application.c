@@ -29,8 +29,9 @@ typedef struct application_state
 static b8 initialized = FALSE;
 static application_state app_state;
 
-b8 application_on_event(u16 code, void* sender, void* listener_inst, event_context context);
+b8 application_on_quit(u16 code, void* sender, void* listener_inst, event_context context);
 b8 application_on_key(u16 code, void* sender, void* listener_inst, event_context context);
+b8 application_on_resized(u16 code, void* sender, void* listener_inst, event_context context);
 
 b8 application_initialize(program* program_inst)
 {
@@ -62,8 +63,9 @@ b8 application_initialize(program* program_inst)
         return FALSE;
     }
 
-    event_register(EVENT_APPLICATION_QUIT, 0, application_on_event);
+    event_register(EVENT_APPLICATION_QUIT, 0, application_on_quit);
     event_register(EVENT_KEY_PRESSED, 0, application_on_key);
+    event_register(EVENT_RESIZED, 0, application_on_resized);
 
     // Initialize platform.
     if (!platform_initialize(
@@ -168,22 +170,22 @@ b8 application_run()
 
     app_state.is_running = FALSE;
 
-    event_unregister(EVENT_APPLICATION_QUIT, 0, application_on_event);
+    event_unregister(EVENT_APPLICATION_QUIT, 0, application_on_quit);
     event_unregister(EVENT_KEY_PRESSED, 0, application_on_key);
+
+    renderer_shutdown();
 
     // Shutdown subsystems.
     logger_shutdown();
     event_shutdown();
     input_shutdown();
 
-    renderer_shutdown();
-
     platform_shutdown(&app_state.platform);
 
     return TRUE;
 }
 
-b8 application_on_event(u16 code, void* sender, void* listener_inst, event_context context)
+b8 application_on_quit(u16 code, void* sender, void* listener_inst, event_context context)
 {
     switch (code)
     {
@@ -207,6 +209,36 @@ b8 application_on_key(u16 code, void* sender, void* listener_inst, event_context
             event_post(EVENT_APPLICATION_QUIT, 0, data);
 
             return TRUE;
+        }
+    }
+
+    return FALSE;
+}
+
+b8 application_on_resized(u16 code, void* sender, void* listener_inst, event_context context)
+{
+    if (code != EVENT_RESIZED) return FALSE;
+
+    u16 width = context.data.u16[0];
+    u16 height = context.data.u16[1];
+
+    if (width != app_state.width || height != app_state.height) // Only update if size changed.
+    {
+        app_state.width = width;
+        app_state.height = height;
+
+        if (width == 0 || height == 0)
+        {
+            // Window is minimized, suspending.
+            app_state.is_suspended = TRUE;
+            HDEBUG("Window minimized, suspending.");
+        }
+        else
+        {
+            // Window is not minimized, resize program and renderer.
+            app_state.is_suspended = FALSE;
+            app_state.program_inst->on_resize(app_state.program_inst, width, height);
+            renderer_on_resized(width, height);
         }
     }
 

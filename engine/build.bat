@@ -18,5 +18,5 @@ SET linkerFlags=-luser32 -lOpengl32 -lGdi32 -l%glewLib%
 SET defines=-D_DEBUG -DHEXPORT -D_CRT_SECURE_NO_WARNINGS
 
 ECHO "Building %assembly%..."
-ECHO clang %cFilenames% %compilerFlags% -o ../bin/%assembly%.dll %defines% %includeFlags% %linkerFlags%
+REM ECHO clang %cFilenames% %compilerFlags% -o ../bin/%assembly%.dll %defines% %includeFlags% %linkerFlags%
 clang %cFilenames% %compilerFlags% -o ../bin/%assembly%.dll %defines% %includeFlags% %linkerFlags%

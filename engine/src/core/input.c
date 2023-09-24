@@ -42,7 +42,7 @@ b8 input_initialize()
 
 void input_shutdown()
 {
-
+    HINFO("Input subsystem shut down successfully.");
 }
 
 void input_update(f64 delta_time)

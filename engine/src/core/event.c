@@ -51,6 +51,8 @@ void event_shutdown()
             state.registered[i].events = 0;
         }
     }
+
+    HINFO("Event subsystem shut down successfully.");
 }
 
 b8 event_register(u16 code, void* listener, PFN_on_event on_event)

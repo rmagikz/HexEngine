@@ -230,7 +230,14 @@ b8 platform_pump_messages(platform_state* platform_state)
                     input_process_mouse_move(move_event->event_x, move_event->event_y);
                 } break;
             case XCB_CONFIGURE_NOTIFY:
-                break;
+                {
+                    xcb_configure_notify_event_t* configure_event = (xcb_configure_notify_event_t*)event;
+
+                    event_context event;
+                    event.data.u16[0] = configure_event->width;
+                    event.data.u16[1] = configure_event->height;
+                    event_post(EVENT_RESIZED, 0, event);
+                } break;
             case XCB_CLIENT_MESSAGE:
                 cm = (xcb_client_message_event_t*)event;
 

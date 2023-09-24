@@ -15,6 +15,7 @@ b8 platform_pump_messages(platform_state* platform_state);
 
 void* platform_opengl_context_create();
 void platform_opengl_context_delete(void* gl_context);
+b8 platform_swap_buffers();
 
 void* platform_allocate(u64 size, b8 aligned);
 void platform_free(void* block, b8 aligned);

@@ -69,3 +69,13 @@ typedef char b8;
 #define HAPI
 #endif
 #endif
+
+
+// Inline
+#ifdef _MSC_VER
+#define HINLINE __forceinline
+#define HNOINLINE __declspec(noinline)
+#else
+#define HINLINE static inline
+#define HNOINLINE
+#endif

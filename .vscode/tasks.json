@@ -4,10 +4,10 @@
             "type": "shell",
             "label": "Build Engine",
             "windows": {
-                "command": "${workspaceFolder}/engine/build.bat"
+                "command": "make -f \"engine/Makefile.engine.windows.mak\" all"
             },
             "linux": {
-                "command": "${workspaceFolder}/engine/build.sh"
+                "command": "make -f \"engine/Makefile.engine.linux.mak\" all"
             },
             "options": {
                 "cwd": "${workspaceFolder}/engine"
@@ -23,10 +23,10 @@
             "type": "shell",
             "label": "Build Sandbox",
             "windows": {
-                "command": "${workspaceFolder}/sandbox/build.bat"
+                "command": "make -f \"engine/Makefile.sandbox.windows.mak\" all"
             },
             "linux": {
-                "command": "${workspaceFolder}/sandbox/build.sh"
+                "command": "make -f \"engine/Makefile.sandbox.linux.mak\" all"
             },
             "options": {
                 "cwd": "${workspaceFolder}/sandbox"
@@ -39,12 +39,12 @@
         },
         {
             "type": "shell",
-            "label": "Build Engine",
+            "label": "Build Everything",
             "windows": {
-                "command": "${workspaceFolder}/build-all.bat"
+                "command": "make --no-print-directory all"
             },
             "linux": {
-                "command": "${workspaceFolder}/build-all.sh"
+                "command": "make --no-print-directory all"
             },
             "options": {
                 "cwd": "${workspaceFolder}"
@@ -57,6 +57,24 @@
                 "kind": "build",
                 "isDefault": true
             }
+        },
+        {
+            "type": "shell",
+            "label": "Clean Everything",
+            "windows": {
+                "command": "make clean"
+            },
+            "linux": {
+                "command": "make clean"
+            },
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": {
+                "base": "$gcc",
+                "fileLocation": "absolute"
+            },
+            "group": "build"
         }
     ],
     "version": "2.0.0"

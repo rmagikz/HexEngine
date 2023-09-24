@@ -205,6 +205,7 @@ b8 application_on_key(u16 code, void* sender, void* listener_inst, event_context
         u16 key_code = context.data.u16[0];
         if (key_code == KEY_ESCAPE)
         {
+            HERROR("KEY PRESSED");
             event_context data = {};
             event_post(EVENT_APPLICATION_QUIT, 0, data);
 

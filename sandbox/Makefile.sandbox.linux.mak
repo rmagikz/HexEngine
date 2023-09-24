@@ -6,7 +6,7 @@ EXTENSION :=
 COMPILER_FLAGS := -g -fdeclspec -fPIC
 
 INCLUDE_FLAGS := -Iengine/src
-LINKER_FLAGS := -L./$(BUILD_DIR)/ -lengine -Wl,-rpath,.
+LINKER_FLAGS := -L./$(BUILD_DIR) -lengine -Wl,-rpath,.
 DEFINES := -D_DEBUG -DHIMPORT
 
 SRC_FILES := $(shell find $(ASSEMBLY) -name *.c)

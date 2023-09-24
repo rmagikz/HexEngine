@@ -13,6 +13,9 @@
 #include <X11/Xlib-xcb.h>
 #include <sys/time.h>
 
+#include <GL/glx.h>
+#include <GL/gl.h>
+
 #if _POSIX_C_SOURCE >= 199309L
 #include <time.h>
 #else
@@ -31,7 +34,31 @@ typedef struct internal_state
     xcb_screen_t* screen;
     xcb_atom_t wm_protocols;
     xcb_atom_t wm_delete_win;
+    GLXFBConfig fb_config;
+    GLXContext gl_context;
+    GLXWindow gl_window;
+    GLXDrawable gl_drawable;
 } internal_state;
+
+static int visual_attribs[] =
+{
+    GLX_X_RENDERABLE, True,
+    GLX_DRAWABLE_TYPE, GLX_WINDOW_BIT,
+    GLX_RENDER_TYPE, GLX_RGBA_BIT,
+    GLX_X_VISUAL_TYPE, GLX_TRUE_COLOR,
+    GLX_RED_SIZE, 8,
+    GLX_GREEN_SIZE, 8,
+    GLX_BLUE_SIZE, 8,
+    GLX_ALPHA_SIZE, 8,
+    GLX_DEPTH_SIZE, 24,
+    GLX_STENCIL_SIZE, 8,
+    GLX_DOUBLEBUFFER, True,
+    //GLX_SAMPLE_BUFFERS  , 1,
+    //GLX_SAMPLES         , 4,
+    None
+};
+
+static int ctxErrorHandler(Display* display, XErrorEvent* event);
 
 keys translate_keycode(u32 x_keycode);
 
@@ -65,6 +92,37 @@ b8 platform_initialize(platform_state* platform_state, const char* application_n
     state->screen = it.data;
 
     state->window = xcb_generate_id(state->connection);
+
+    GLXFBConfig *fb_configs = 0;
+    int num_fb_configs = 0;
+    fb_configs = glXChooseFBConfig
+    (
+        state->display,
+        DefaultScreen(state->display),
+        visual_attribs,
+        &num_fb_configs
+    );
+
+    if(!fb_configs || num_fb_configs == 0)
+    {
+        HFATAL("Failed to retrieve OpenGL framebuffer config.");
+        return 0;
+    }
+
+    int visual_id;
+    state->fb_config = fb_configs[0];
+    glXGetFBConfigAttrib(state->display, state->fb_config, GLX_VISUAL_ID , &visual_id);
+
+    xcb_colormap_t colormap = xcb_generate_id(state->connection);
+    xcb_window_t window = xcb_generate_id(state->connection);
+    xcb_create_colormap
+    (
+        state->connection,
+        XCB_COLORMAP_ALLOC_NONE,
+        colormap,
+        state->screen->root,
+        visual_id
+    );
 
     u32 event_mask = XCB_CW_BACK_PIXEL | XCB_CW_EVENT_MASK;
 
@@ -312,6 +370,64 @@ void platform_sleep(u64 ms)
     }
     usleep((ms % 1000) * 1000);
 #endif
+}
+
+void* platform_opengl_context_create(platform_state* platform_state)
+{
+    internal_state* state = (internal_state*)platform_state->internal_state;
+
+    state->gl_context = glXCreateNewContext
+    (
+        state->display,
+        state->fb_config,
+        GLX_RGBA_TYPE,
+        0,
+        True
+    );
+
+    if (!state->gl_context)
+    {
+        // TODO: ERROR HANDLING
+        HFATAL("Failed to create OpenGL context, shutting down.");
+        return 0;
+    }
+    
+    state->gl_window = glXCreateWindow
+    (
+        state->display,
+        state->fb_config,
+        state->window,
+        0
+    );
+
+    state->gl_drawable = state->gl_window;
+
+    if (!glXMakeContextCurrent(state->display, state->gl_drawable, state->gl_drawable, state->gl_context))
+    {
+        // TODO: ERROR HANDLING
+        HFATAL("Failed to make OpenGL context current, shutting down.");
+        return 0;
+    }
+
+    return state->gl_context;
+}
+
+void platform_opengl_context_delete(platform_state* platform_state)
+{
+    internal_state* state = (internal_state*)platform_state->internal_state;
+
+    glXDestroyWindow(state->display, state->gl_window);
+    glXDestroyContext(state->display, state->gl_context);
+}
+
+b8 platform_swap_buffers(platform_state* platform_state)
+{
+    // TODO: ERROR HANDLING
+    internal_state* state = (internal_state*)platform_state->internal_state;
+
+    glXSwapBuffers(state->display, state->gl_drawable);
+
+    return TRUE;
 }
 
 keys translate_keycode(u32 x_keycode)

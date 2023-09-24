@@ -5,10 +5,8 @@ ASSEMBLY := engine
 EXTENSION := .so
 COMPILER_FLAGS := -g -fdeclspec -fPIC
 
-GLEW:= engine/vendor/glew-2.2.0
-
-INCLUDE_FLAGS := -Iengine/src -I$(GLEW)/include
-LINKER_FLAGS := -g -shared -lxcb -lX11 -lX11-xcb -lxkbcommon -L/usr/X11R6/lib -lGL -l$(GLEW)/lib/Release/x64/glew32s
+INCLUDE_FLAGS := -Iengine/src
+LINKER_FLAGS := -g -shared -lxcb -lX11 -lX11-xcb -lxkbcommon -L/usr/X11R6/lib -lGL -lGLEW -lm
 DEFINES := -D_DEBUG -DHEXPORT
 
 SRC_FILES := $(shell find $(ASSEMBLY) -name *.c)
@@ -20,7 +18,8 @@ all: scaffold compile link
 .PHONY: scaffold
 scaffold:
 	@echo Scaffolding folder structure...
-	-@mkdir -p $(addprefix $(OBJ_DIR)/,$(DIRECTORIES))
+	@mkdir -p $(BUILD_DIR)
+	@mkdir -p $(addprefix $(OBJ_DIR)/,$(DIRECTORIES))
 	@echo Done.
 
 .PHONY: link

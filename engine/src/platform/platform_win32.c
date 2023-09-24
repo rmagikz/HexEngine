@@ -14,14 +14,14 @@ typedef struct internal_state
 {
     HINSTANCE h_instance;
     HWND hwnd;
+    HDC window_device_handle;
+    HGLRC gl_context;
 } internal_state;
 
 static f64 clock_frequency;
 static LARGE_INTEGER start_time;
-static HDC window_device_handle;
 
 LRESULT CALLBACK win32_process_message(HWND hwnd, u32 msg, WPARAM w_param, LPARAM l_param);
-HDC get_window_device_handle(HWND hwnd);
 
 b8 platform_initialize(platform_state* platform_state, const char* application_name, i32 x, i32 y, i32 width, i32 height)
 {
@@ -214,10 +214,10 @@ LRESULT CALLBACK win32_process_message(HWND hwnd, u32 msg, WPARAM w_param, LPARA
                     0, 0, 0
                 };
 
-                window_device_handle = GetDC(hwnd);
+                state->window_device_handle = GetDC(hwnd);
 
-                i32 pixel_format = ChoosePixelFormat(window_device_handle, &pfd); 
-                SetPixelFormat(window_device_handle,pixel_format, &pfd);
+                i32 pixel_format = ChoosePixelFormat(state->window_device_handle, &pfd); 
+                SetPixelFormat(state->window_device_handle,pixel_format, &pfd);
             } break;
         case WM_ERASEBKGND:
             return 1;
@@ -294,36 +294,40 @@ LRESULT CALLBACK win32_process_message(HWND hwnd, u32 msg, WPARAM w_param, LPARA
 
     return DefWindowProcA(hwnd, msg, w_param, l_param);
 }
-void* platform_opengl_context_create()
+void* platform_opengl_context_create(platform_state* platform_state)
 {
-    // Create OpenGL context and make current.
-    HGLRC gl_context = wglCreateContext(window_device_handle);
+    internal_state* state = (internal_state*)platform_state->internal_state;
 
-    if (gl_context == 0)
+    // Create OpenGL context and make current.
+    state->gl_context = wglCreateContext(state->window_device_handle);
+
+    if (state->gl_context == 0)
     {
         int result = GetLastError();
         HFATAL("Failed to create OpenGL context, shutting down. Error code: %d", result);
         return 0;
     }
 
-    if (wglMakeCurrent(window_device_handle, gl_context) == 0)
+    if (wglMakeCurrent(state->window_device_handle, state->gl_context) == 0)
     {
         int result = GetLastError();
         HFATAL("Failed to make OpenGL context current, shutting down. Error code: %d", result);
         return 0;
     }
 
-    return gl_context;
+    return state->gl_context;
 }
 
-void platform_opengl_context_delete(void* gl_context)
+void platform_opengl_context_delete(platform_state* platform_state)
 {
-    wglDeleteContext(gl_context);
+    internal_state* state = (internal_state*)platform_state->internal_state;
+
+    wglDeleteContext(state->gl_context);
 }
 
-b8 platform_swap_buffers()
+b8 platform_swap_buffers(platform_state* platform_state)
 {
-    return SwapBuffers(window_device_handle);
+    return SwapBuffers(state->window_device_handle);
 }
 
 #endif // HPLATFORM_WINDOWS

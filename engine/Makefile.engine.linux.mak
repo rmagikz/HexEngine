@@ -13,10 +13,11 @@ SRC_FILES := $(shell find $(ASSEMBLY) -name *.c)
 DIRECTORIES := $(shell find $(ASSEMBLY) -type d)
 OBJ_FILES := $(SRC_FILES:%=$(OBJ_DIR)/%.o)
 
-all: scaffold compile link
+all: scaffold compile link post-build
 
 .PHONY: scaffold
 scaffold:
+	@echo Building $(ASSEMBLY)...
 	@echo Scaffolding folder structure...
 	@mkdir -p $(BUILD_DIR)
 	@mkdir -p $(addprefix $(OBJ_DIR)/,$(DIRECTORIES))
@@ -30,6 +31,13 @@ link: scaffold $(OBJ_FILES)
 .PHONY: compile
 compile:
 	@echo Compiling...
+
+.PHONY: post-build
+post-build:
+	@echo Copying shaders...
+	@mkdir -p bin/assets
+	@cp -R assets bin/assets
+	@echo Build Finished.
 
 .PHONY: clean
 clean:

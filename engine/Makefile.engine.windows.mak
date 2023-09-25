@@ -18,10 +18,10 @@ SRC_FILES := $(call rwildcard,$(ASSEMBLY)/,*.c)
 DIRECTORIES := \$(ASSEMBLY)\src $(subst $(DIR),,$(shell dir $(ASSEMBLY)\src /S/ AD/ B | findstr /i src))
 OBJ_FILES := $(SRC_FILES:%=$(OBJ_DIR)/%.o)
 
-all: scaffold compile link
-
+all: scaffold compile link post-build
 .PHONY: scaffold
 scaffold:
+	@echo Building $(ASSEMBLY)...
 	@echo Scaffolding folder structure...
 	-@setlocal enableextensions enabledelayedexpansion && mkdir $(addprefix $(OBJ_DIR), $(DIRECTORIES)) 2>NUL || cd .
 	-@setlocal enableextensions enabledelayedexpansion && mkdir $(BUILD_DIR) 2>NUL || cd .
@@ -35,6 +35,13 @@ link: scaffold $(OBJ_FILES)
 .PHONY: compile
 compile:
 	@echo Compiling...
+
+.PHONY: post-build
+post-build:
+	-@setlocal enableextensions enabledelayedexpansion && mkdir $(BUILD_DIR)\assets\shaders 2>NUL || cd .
+	@echo Copying shaders...
+	@xcopy /h /i /c /k /e /r /y assets bin\assets
+	@echo Build Finished.
 
 .PHONY: clean
 clean:

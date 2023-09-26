@@ -12,6 +12,7 @@ typedef enum memory_tag
     MEMORY_TAG_APPLICATION,
     MEMORY_TAG_PROGRAM,
     MEMORY_TAG_RENDERER,
+    MEMORY_TAG_LINEAR_ALLOCATOR,
 
     MEMORY_TAG_MAX_TAGS
 } memory_tag;

@@ -17,9 +17,11 @@ all:
 	@echo Building all...
 	@make -f "engine/Makefile.engine.$(PLATFORM).mak" all
 	@make -f "sandbox/Makefile.sandbox.$(PLATFORM).mak" all
+	@make -f "tests/Makefile.tests.$(PLATFORM).mak" all
 
 .PHONY: clean
 clean:
 	@echo Cleaning...
 	@make -f "sandbox/Makefile.sandbox.$(PLATFORM).mak" clean
+	@make -f "tests/Makefile.tests.$(PLATFORM).mak" clean
 	@make -f "engine/Makefile.engine.$(PLATFORM).mak" clean

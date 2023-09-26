@@ -39,6 +39,24 @@
         },
         {
             "type": "shell",
+            "label": "Build Unit Tests",
+            "windows": {
+                "command": "make -f \"engine/Makefile.tests.windows.mak\" all"
+            },
+            "linux": {
+                "command": "make -f \"engine/Makefile.tests.linux.mak\" all"
+            },
+            "options": {
+                "cwd": "${workspaceFolder}/tests"
+            },
+            "problemMatcher": {
+                "base": "$gcc",
+                "fileLocation": "absolute"
+            },
+            "group": "build",
+        },
+        {
+            "type": "shell",
             "label": "Build Everything",
             "windows": {
                 "command": "make --no-print-directory all"

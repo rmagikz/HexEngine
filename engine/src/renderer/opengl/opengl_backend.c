@@ -132,26 +132,9 @@ const char* type_string(GLenum type)
             return "Unknown";
     };
 }
-const char* severity_string(GLenum severity)
-{
-    switch (severity)
-    {
-        case GL_DEBUG_SEVERITY_HIGH:
-            return "HIGH";
-        case GL_DEBUG_SEVERITY_MEDIUM:
-            return "MEDIUM";
-        case GL_DEBUG_SEVERITY_LOW:
-            return "LOW";
-        case GL_DEBUG_SEVERITY_NOTIFICATION:
-            return "NOTIFICATION";
-        default:
-            return "UNKNOWN";
-    };
-}
 
 void GLAPIENTRY opengl_debug_callback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam)
 {
-    // TODO: Remove severity? Force all to be errors.
-    HERROR("%s OpenGL Error %d: Severity: %s, Type: %s, Message: %s", source_string(source), type, severity_string(severity), type_string(type), message);
+    HERROR("%s OpenGL Error %d: Type: %s, Message: %s", source_string(source), type, type_string(type), message);
 }
 #endif

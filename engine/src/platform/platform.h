@@ -2,20 +2,20 @@
 
 #include "defines.h"
 
-typedef struct platform_state
+typedef struct platform_system_state
 {
     void* internal_state;
-} platform_state;
+} platform_system_state;
 
-b8 platform_initialize(platform_state* platform_state, const char* application_name, i32 x, i32 y, i32 width, i32 height);
+b8 platform_initialize(u64* memory_requirement, void* platform_state, const char* application_name, i32 x, i32 y, i32 width, i32 height);
 
-void platform_shutdown(platform_state* platform_state);
+void platform_shutdown(void* platform_state);
 
-b8 platform_pump_messages(platform_state* platform_state);
+b8 platform_pump_messages(void* platform_state);
 
-void* platform_opengl_context_create(platform_state* platform_state);
-void platform_opengl_context_delete(platform_state* platform_state);
-b8 platform_swap_buffers(platform_state* platform_state);
+void* platform_opengl_context_create();
+void platform_opengl_context_delete();
+b8 platform_swap_buffers();
 
 void* platform_allocate(u64 size, b8 aligned);
 void platform_free(void* block, b8 aligned);

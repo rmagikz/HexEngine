@@ -1,5 +1,6 @@
+#include "memory/hmemory.h"
+
 #include "core/hstring.h"
-#include "core/hmemory.h"
 
 #include <string.h>
 #include <stdio.h>

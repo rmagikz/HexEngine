@@ -17,7 +17,8 @@ b8 create_program(program* out_program)
     out_program->render = program_render;
     out_program->on_resize = program_on_resize;
 
-    out_program->state = hallocate(sizeof(program_state), MEMORY_TAG_PROGRAM);
+    out_program->program_state = hallocate(sizeof(program_state), MEMORY_TAG_PROGRAM);
+    out_program->application_state = 0;
 
     return TRUE;
 }

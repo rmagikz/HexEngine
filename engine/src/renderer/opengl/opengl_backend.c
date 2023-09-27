@@ -17,7 +17,7 @@ void GLAPIENTRY opengl_debug_callback(GLenum source, GLenum type, GLuint id, GLe
 
 b8 opengl_backend_initialize(renderer_backend* backend, const char* application_name)
 {
-    context.instance = platform_opengl_context_create(backend->platform_state);
+    context.instance = platform_opengl_context_create();
     if (context.instance == 0)
     {
         HFATAL("OpenGL context creation failed.");
@@ -55,7 +55,7 @@ b8 opengl_backend_initialize(renderer_backend* backend, const char* application_
 
 void opengl_backend_shutdown(renderer_backend* backend)
 {
-    platform_opengl_context_delete(backend->platform_state);
+    platform_opengl_context_delete();
 
     HINFO("OpenGL renderer shut down successfully.");
 }
@@ -77,7 +77,7 @@ b8 opengl_backend_begin_frame(renderer_backend* backend, f32 delta_time)
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    return platform_swap_buffers(backend->platform_state);
+    return platform_swap_buffers();
 }
 
 b8 opengl_backend_end_frame(renderer_backend* backend, f32 delta_time)

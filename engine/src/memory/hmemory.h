@@ -17,9 +17,9 @@ typedef enum memory_tag
     MEMORY_TAG_MAX_TAGS
 } memory_tag;
 
-HAPI b8 memory_initialize();
+HAPI b8 memory_initialize(u64* memory_requirement, void* state);
 
-HAPI void memory_shutdown();
+HAPI void memory_shutdown(void* state);
 
 HAPI void* hallocate(u64 size, memory_tag tag);
 
@@ -34,5 +34,7 @@ HAPI void* hset_memory(void* block, i32 value, u64 size);
 #ifdef _DEBUG
 
 HAPI char* get_memory_usage_str();
+
+HAPI u64 get_total_memory_allocations();
 
 #endif

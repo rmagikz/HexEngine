@@ -10,27 +10,30 @@
 #include <windowsx.h>
 #include <stdlib.h>
 
-typedef struct internal_state
+typedef struct platform_state
 {
     HINSTANCE h_instance;
     HWND hwnd;
+    HDC window_device_handle;
     HGLRC gl_context;
-} internal_state;
+    f64 clock_frequency;
+    LARGE_INTEGER start_time;
+} platform_state;
 
-static f64 clock_frequency;
-static LARGE_INTEGER start_time;
-static HDC window_device_handle;
+static platform_state* state_ptr;
 
 LRESULT CALLBACK win32_process_message(HWND hwnd, u32 msg, WPARAM w_param, LPARAM l_param);
 
-b8 platform_initialize(platform_state* platform_state, const char* application_name, i32 x, i32 y, i32 width, i32 height)
+b8 platform_initialize(u64* memory_requirement, void* state, const char* application_name, i32 x, i32 y, i32 width, i32 height)
 {
-    platform_state->internal_state = malloc(sizeof(internal_state));
-    internal_state* state = (internal_state*)platform_state->internal_state;
+    *memory_requirement = sizeof(platform_state);
+    if (!state) return FALSE;
 
-    state->h_instance = GetModuleHandleA(0);
+    state_ptr = state;
 
-    HICON icon = LoadIcon(state->h_instance, IDI_APPLICATION);
+    state_ptr->h_instance = GetModuleHandleA(0);
+
+    HICON icon = LoadIcon(state_ptr->h_instance, IDI_APPLICATION);
 
     WNDCLASSA wc;
     memset(&wc, 0, sizeof(wc));
@@ -39,7 +42,7 @@ b8 platform_initialize(platform_state* platform_state, const char* application_n
     wc.lpfnWndProc = win32_process_message;
     wc.cbClsExtra = 0;
     wc.cbWndExtra = 0;
-    wc.hInstance = state->h_instance;
+    wc.hInstance = state_ptr->h_instance;
     wc.hIcon = icon;
     wc.hCursor = LoadCursor(NULL, IDC_ARROW);
     wc.hbrBackground = NULL;
@@ -77,7 +80,7 @@ b8 platform_initialize(platform_state* platform_state, const char* application_n
     window_width += border_rect.right - border_rect.left;
     window_height += border_rect.bottom - border_rect.top;
 
-    HWND handle = CreateWindowExA(window_ex_style, "engine_window_class", application_name, window_style, window_x, window_y, window_width, window_height, 0, 0, state->h_instance, 0);
+    HWND handle = CreateWindowExA(window_ex_style, "engine_window_class", application_name, window_style, window_x, window_y, window_width, window_height, 0, 0, state_ptr->h_instance, 0);
 
     if (handle == 0)
     {
@@ -87,33 +90,31 @@ b8 platform_initialize(platform_state* platform_state, const char* application_n
         return FALSE;
     }
 
-    state->hwnd = handle;
+    state_ptr->hwnd = handle;
 
     b32 should_activate = 1;
     i32 show_window_command_flags = should_activate ? SW_SHOW : SW_SHOWNOACTIVATE;
 
-    ShowWindow(state->hwnd, show_window_command_flags);
+    ShowWindow(state_ptr->hwnd, show_window_command_flags);
 
     LARGE_INTEGER frequency;
     QueryPerformanceFrequency(&frequency);
-    clock_frequency = 1.0 / (f64)frequency.QuadPart;
-    QueryPerformanceCounter(&start_time);
+    state_ptr->clock_frequency = 1.0 / (f64)frequency.QuadPart;
+    QueryPerformanceCounter(&state_ptr->start_time);
 
     return TRUE;
 }
 
-void platform_shutdown(platform_state* platform_state)
+void platform_shutdown(void* state)
 {
-    internal_state* state = (internal_state*)platform_state->internal_state;
-
-    if (state->hwnd)
+    if (state_ptr->hwnd)
     {
-        DestroyWindow(state->hwnd);
-        state->hwnd = 0;
+        DestroyWindow(state_ptr->hwnd);
+        state_ptr->hwnd = 0;
     }
 }
 
-b8 platform_pump_messages(platform_state* platform_state)
+b8 platform_pump_messages(void* state)
 {
     MSG message;
     while (PeekMessageA(&message, NULL, 0, 0, PM_REMOVE))
@@ -178,9 +179,13 @@ void platform_console_write_error(const char* message, u8 color)
 
 f64 platform_get_absolute_time()
 {
-    LARGE_INTEGER now_time;
-    QueryPerformanceCounter(&now_time);
-    return (f64)now_time.QuadPart * clock_frequency;
+    if (state_ptr)
+    {
+        LARGE_INTEGER now_time;
+        QueryPerformanceCounter(&now_time);
+        return (f64)now_time.QuadPart * state_ptr->clock_frequency;
+    }
+    return 0;
 }
 
 void platform_sleep(u64 ms)
@@ -214,10 +219,10 @@ LRESULT CALLBACK win32_process_message(HWND hwnd, u32 msg, WPARAM w_param, LPARA
                     0, 0, 0
                 };
 
-                window_device_handle = GetDC(hwnd);
+                state_ptr->window_device_handle = GetDC(hwnd);
 
-                i32 pixel_format = ChoosePixelFormat(window_device_handle, &pfd); 
-                SetPixelFormat(window_device_handle,pixel_format, &pfd);
+                i32 pixel_format = ChoosePixelFormat(state_ptr->window_device_handle, &pfd); 
+                SetPixelFormat(state_ptr->window_device_handle,pixel_format, &pfd);
             } break;
         case WM_ERASEBKGND:
             return 1;
@@ -335,42 +340,36 @@ LRESULT CALLBACK win32_process_message(HWND hwnd, u32 msg, WPARAM w_param, LPARA
 
     return DefWindowProcA(hwnd, msg, w_param, l_param);
 }
-void* platform_opengl_context_create(platform_state* platform_state)
+void* platform_opengl_context_create()
 {
-    internal_state* state = (internal_state*)platform_state->internal_state;
-
     // Create OpenGL context and make current.
-    state->gl_context = wglCreateContext(window_device_handle);
+    state_ptr->gl_context = wglCreateContext(state_ptr->window_device_handle);
 
-    if (state->gl_context == 0)
+    if (state_ptr->gl_context == 0)
     {
         int result = GetLastError();
         HFATAL("Failed to create OpenGL context, shutting down. Error code: %d", result);
         return 0;
     }
 
-    if (wglMakeCurrent(window_device_handle, state->gl_context) == 0)
+    if (wglMakeCurrent(state_ptr->window_device_handle, state_ptr->gl_context) == 0)
     {
         int result = GetLastError();
         HFATAL("Failed to make OpenGL context current, shutting down. Error code: %d", result);
         return 0;
     }
 
-    return state->gl_context;
+    return state_ptr->gl_context;
 }
 
-void platform_opengl_context_delete(platform_state* platform_state)
+void platform_opengl_context_delete()
 {
-    internal_state* state = (internal_state*)platform_state->internal_state;
-
-    wglDeleteContext(state->gl_context);
+    wglDeleteContext(state_ptr->gl_context);
 }
 
-b8 platform_swap_buffers(platform_state* platform_state)
+b8 platform_swap_buffers()
 {
-    internal_state* state = (internal_state*)platform_state->internal_state;
-
-    return SwapBuffers(window_device_handle);
+    return SwapBuffers(state_ptr->window_device_handle);
 }
 
 #endif // HPLATFORM_WINDOWS

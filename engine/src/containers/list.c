@@ -1,6 +1,7 @@
 #include "containers/list.h"
 
-#include "core/hmemory.h"
+#include "memory/hmemory.h"
+
 #include "core/logger.h"
 
 void* _list_create(u64 count, u64 stride)

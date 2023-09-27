@@ -14,5 +14,7 @@ typedef struct program
 
     void (*on_resize)(struct program* program_inst, u32 width, u32 height);
 
-    void* state;
+    void* program_state;
+
+    void* application_state;
 } program;

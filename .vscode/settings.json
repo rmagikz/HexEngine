@@ -10,6 +10,9 @@
         "opengl_backend.h": "c",
         "renderer_backend.h": "c",
         "renderer_types.inl": "c",
-        "opengl_types.inl": "c"
+        "opengl_types.inl": "c",
+        "application.h": "c",
+        "logger.h": "c",
+        "input.h": "c"
     }
 }

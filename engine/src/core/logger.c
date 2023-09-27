@@ -6,25 +6,35 @@
 #include <stdarg.h>
 #include <string.h>
 
-static b8 is_initialized = FALSE;
+typedef struct logger_system_state
+{
+    b8 is_initialized;
+} logger_system_state;
+
+static logger_system_state* state_ptr;
+
 static const char* log_level_strings[6] = {"[FATAL]", "[ERROR]", "[WARN]", "[INFO]", "[DEBUG]", "[TRACE]"};
 
-b8 logger_initialize()
+b8 logger_initialize(u64* memory_requirement, void* state)
 {
-    if (is_initialized == TRUE)
-    {
-        HERROR("logger_initialize() called more than once!");
-        return FALSE;
-    }
-    HINFO("Logger subsystem initialized.");
+    *memory_requirement = sizeof(logger_system_state);
+
+    if (!state) return FALSE;
+    
+    state_ptr = state;
+    state_ptr->is_initialized = TRUE;
+
+    HINFO("Logger subsystem initialized successfully.");
 
     // TODO: create log file.
     return TRUE;
 }
 
-void logger_shutdown()
+void logger_shutdown(void* state)
 {
     // TODO: clean up logger.
+
+    state_ptr = 0;
 
     HINFO("Logger subsystem shut down successfully.");
 }

@@ -1,8 +1,9 @@
 #pragma once
 
+#include "memory/hmemory.h"
+
 #include "core/application.h"
 #include "core/logger.h"
-#include "core/hmemory.h"
 #include "program_types.h"
 
 extern b8 create_program(program* out_program);
@@ -10,9 +11,6 @@ extern b8 create_program(program* out_program);
 // Main entry point.
 int main(void)
 {
-    // Initialize memory subsystem.
-    memory_initialize();
-
     program program_inst;
     if (!create_program(&program_inst))
     {
@@ -37,8 +35,6 @@ int main(void)
         HINFO("Application did not shut down correctly.");
         return 2;
     }
-
-    memory_shutdown();
 
     return 0;
 }

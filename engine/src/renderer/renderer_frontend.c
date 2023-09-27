@@ -1,19 +1,29 @@
 #include "renderer_frontend.h"
 #include "renderer_backend.h"
 
+#include "memory/hmemory.h"
+
 #include "core/logger.h"
-#include "core/hmemory.h"
 
-static renderer_backend* backend = 0;
-
-b8 renderer_initialize(const char* application_name, struct platform_state* platform_state)
+typedef struct renderer_system_state
 {
-    backend = hallocate(sizeof(renderer_backend), MEMORY_TAG_RENDERER);
+    renderer_backend backend;
+} renderer_system_state;
 
-    renderer_backend_create(RENDERER_BACKEND_OPENGL, platform_state, backend);
-    backend->frame_number = 0;
+static renderer_system_state* state_ptr;
 
-    if (!backend->initialize(backend, application_name))
+b8 renderer_initialize(u64* memory_requirement, void* state, const char* application_name)
+{
+    *memory_requirement = sizeof(renderer_system_state);
+
+    if (!state) return FALSE;
+
+    state_ptr = state;
+
+    renderer_backend_create(RENDERER_BACKEND_OPENGL, &state_ptr->backend);
+    state_ptr->backend.frame_number = 0;
+
+    if (!state_ptr->backend.initialize(&state_ptr->backend, application_name))
     {
         HFATAL("Renderer backend failed to initialzie. Shutting down.");
         return FALSE;
@@ -22,31 +32,36 @@ b8 renderer_initialize(const char* application_name, struct platform_state* plat
     return TRUE;
 }
 
-void renderer_shutdown()
+void renderer_shutdown(void* state)
 {
-    backend->shutdown(backend);
-    renderer_backend_destroy(backend);
-    hfree(backend, sizeof(renderer_backend), MEMORY_TAG_RENDERER);
+    if (state_ptr)
+    {
+        state_ptr->backend.shutdown(&state_ptr->backend);
+    }
+
+    state_ptr = 0;
+
+    HINFO("Renderer subsystem shut down successfully.");
 }
 
 void renderer_on_resized(u16 width, u16 height)
 {
-    if (backend)
+    if (state_ptr)
     {
-        backend->resized(backend, width, height);
+        state_ptr->backend.resized(&state_ptr->backend, width, height);
         return;
     }
 }
 
 b8 renderer_begin_frame(f32 delta_time)
 {
-    return backend->begin_frame(backend, delta_time);
+    return state_ptr->backend.begin_frame(&state_ptr->backend, delta_time);
 }
 
 b8 renderer_end_frame(f32 delta_time)
 {
-    b8 result = backend->end_frame(backend, delta_time);
-    backend->frame_number++;
+    b8 result = state_ptr->backend.end_frame(&state_ptr->backend, delta_time);
+    state_ptr->backend.frame_number++;
     return result;
 }
 

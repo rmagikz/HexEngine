@@ -12,9 +12,22 @@ typedef enum log_level
     LOG_TRACE   = 5
 } log_level;
 
-HAPI b8 logger_initialize();
+/**
+ * @brief Initializes logger subsystem. Call twice; once with state = 0 to get
+ * required memory size, then a second time passing allocated memory for internal state.
+ * 
+ * @param memory_requirement a pointer to hold the required size for the internal state.
+ * @param state the pointer in which to store the internal state.
+ * @return b8
+*/
+HAPI b8 logger_initialize(u64* memory_requirement, void* state);
 
-HAPI void logger_shutdown();
+/**
+ * @brief Shuts down the logger subsystems and flushes any queued entries to the log file.
+ * 
+ * @param state the pointer to the internal state for the logger.
+*/
+HAPI void logger_shutdown(void* state);
 
 HAPI void logger_log(log_level log_severity, const char* message, ...);
 

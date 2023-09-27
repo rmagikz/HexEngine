@@ -3,7 +3,7 @@
 #include "defines.h"
 #include "math_types.h"
 
-#include "core/hmemory.h"
+#include "memory/hmemory.h"
 
 #define H_PI 3.14159265358979323846f
 #define H_PI_2 2.0f * H_PI

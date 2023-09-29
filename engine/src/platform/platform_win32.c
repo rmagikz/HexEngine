@@ -16,13 +16,22 @@ typedef struct platform_state
     HWND hwnd;
     HDC window_device_handle;
     HGLRC gl_context;
-    f64 clock_frequency;
-    LARGE_INTEGER start_time;
 } platform_state;
 
 static platform_state* state_ptr;
 
+f64 clock_frequency;
+LARGE_INTEGER start_time;
+
 LRESULT CALLBACK win32_process_message(HWND hwnd, u32 msg, WPARAM w_param, LPARAM l_param);
+
+void clock_setup()
+{
+    LARGE_INTEGER frequency;
+    QueryPerformanceCounter(&frequency);
+    clock_frequency = 1.0 / (f64)frequency.QuadPart;
+    QueryPerformanceCounter(&start_time);
+}
 
 b8 platform_initialize(u64* memory_requirement, void* state, const char* application_name, i32 x, i32 y, i32 width, i32 height)
 {
@@ -97,10 +106,7 @@ b8 platform_initialize(u64* memory_requirement, void* state, const char* applica
 
     ShowWindow(state_ptr->hwnd, show_window_command_flags);
 
-    LARGE_INTEGER frequency;
-    QueryPerformanceFrequency(&frequency);
-    state_ptr->clock_frequency = 1.0 / (f64)frequency.QuadPart;
-    QueryPerformanceCounter(&state_ptr->start_time);
+    clock_setup();
 
     return TRUE;
 }
@@ -179,13 +185,15 @@ void platform_console_write_error(const char* message, u8 color)
 
 f64 platform_get_absolute_time()
 {
-    if (state_ptr)
+    if (!clock_frequency)
     {
-        LARGE_INTEGER now_time;
-        QueryPerformanceCounter(&now_time);
-        return (f64)now_time.QuadPart * state_ptr->clock_frequency;
+        clock_setup();
     }
-    return 0;
+
+    LARGE_INTEGER now_time;
+    QueryPerformanceCounter(&now_time);
+    
+    return (f64)now_time.QuadPart * clock_frequency;
 }
 
 void platform_sleep(u64 ms)
@@ -254,43 +262,22 @@ LRESULT CALLBACK win32_process_message(HWND hwnd, u32 msg, WPARAM w_param, LPARA
                 b8 pressed = (msg == WM_KEYDOWN || msg == WM_SYSKEYDOWN);
                 keys key = (u16)w_param;
 
-                // Left/Right Alt Key
+                b8 is_extended = (HIWORD(l_param) & KF_EXTENDED) == KF_EXTENDED;
+
+                // Left/Right Alt/Shift/Control
                 if (w_param == VK_MENU)
                 {
-                    if (GetKeyState(VK_RMENU) & 0x8000)
-                    {
-                        key = KEY_RALT;
-                    }
-                    else if (GetKeyState(VK_RMENU) & 0x8000)
-                    {
-                        key = KEY_RALT;
-                    }
+                    key = is_extended ? KEY_RALT : KEY_LALT;
                 }
-
-                // Left/Right Shift Key
-                if (w_param == VK_SHIFT)
+                else if (w_param == VK_SHIFT)
                 {
-                    if (GetKeyState(VK_RSHIFT) & 0x8000)
-                    {
-                        key = KEY_RSHIFT;
-                    }
-                    else if (GetKeyState(VK_LSHIFT) & 0x8000)
-                    {
-                        key = KEY_LSHIFT;
-                    }
+                    u32 left_shift = MapVirtualKey(VK_LSHIFT, MAPVK_VK_TO_VSC);
+                    u32 scancode = ((l_param & (0xFF << 16)) >> 16);
+                    key = scancode == left_shift ? KEY_LSHIFT : KEY_RSHIFT;
                 }
-
-                // Left/Right Control Key
-                if (w_param == VK_CONTROL)
+                else if (w_param == VK_CONTROL)
                 {
-                    if (GetKeyState(VK_RCONTROL) & 0x8000)
-                    {
-                        key = KEY_RCONTROL;
-                    }
-                    else if (GetKeyState(VK_LCONTROL) & 0x8000)
-                    {
-                        key = KEY_LCONTROL;
-                    }
+                    key = is_extended ? KEY_RCONTROL : KEY_LCONTROL;
                 }
 
                 input_process_key(key, pressed);

@@ -13,6 +13,7 @@
         "opengl_types.inl": "c",
         "application.h": "c",
         "logger.h": "c",
-        "input.h": "c"
+        "input.h": "c",
+        "filesystem.h": "c"
     }
 }

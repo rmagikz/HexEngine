@@ -104,7 +104,7 @@ b8 input_was_key_up(keys key)
 
 void input_process_key(keys key, b8 pressed)
 {
-    if (state_ptr->keyboard_current.keys[key] == pressed)
+    if (state_ptr && state_ptr->keyboard_current.keys[key] == pressed)
     {
         return;
     }

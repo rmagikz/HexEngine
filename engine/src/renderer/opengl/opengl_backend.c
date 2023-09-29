@@ -8,6 +8,8 @@
 
 #include "platform/platform.h"
 
+#include "shaders/opengl_object_shader.h"
+
 static opengl_context context;
 static b8 size_dirty_flag = FALSE;
 
@@ -48,6 +50,12 @@ b8 opengl_backend_initialize(renderer_backend* backend, const char* application_
 #endif
 
     glClearColor(0.2f, 0.2f, 0.2, 1.0f);
+
+    if (!opengl_object_shader_create(&context, &context.object_shader))
+    {
+        HERROR("Error loading built-in basic_lighting shader.");
+        return FALSE;
+    }
 
     HINFO("OpenGL renderer initialized. Version: %s", glGetString(GL_VERSION));
     return TRUE;

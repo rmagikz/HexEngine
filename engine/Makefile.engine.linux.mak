@@ -5,7 +5,9 @@ ASSEMBLY := engine
 EXTENSION := .so
 COMPILER_FLAGS := -g -fdeclspec -fPIC
 
-INCLUDE_FLAGS := -Iengine/src
+STB := engine/vendor/stb_image
+
+INCLUDE_FLAGS := -Iengine/src -I$(STB)
 LINKER_FLAGS := -g -shared -lxcb -lX11 -lX11-xcb -lxkbcommon -L/usr/X11R6/lib -lGL -lGLEW -lm
 DEFINES := -D_DEBUG -DHEXPORT
 

@@ -7,8 +7,9 @@ EXTENSION := .dll
 COMPILER_FLAGS := -g -fdeclspec
 
 GLEW := engine\vendor\glew-2.2.0
+STB := engine\vendor\stb_image
 
-INCLUDE_FLAGS := -Iengine\src -I$(GLEW)\include
+INCLUDE_FLAGS := -Iengine\src -I$(GLEW)\include -I$(STB)
 LINKER_FLAGS := -g -shared -luser32  -lOpengl32 -lGdi32 -l$(GLEW)\lib\Release\x64\glew32s
 DEFINES := -D_DEBUG -DHEXPORT -D_CRT_SECURE_NO_WARNINGS
 

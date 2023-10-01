@@ -47,7 +47,7 @@ HAPI i32 hrandom_in_range(i32 min, i32 max);
 HAPI f32 fhrandom();
 HAPI f32 fhrandom_in_range(f32 min, f32 max);
 
-HINLINE f32 deg_to_rag(f32 degrees)
+HINLINE f32 deg_to_rad(f32 degrees)
 {
     return degrees * H_RAD_TO_DEG;
 }

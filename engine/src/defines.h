@@ -25,6 +25,8 @@ typedef char b8;
 #define TRUE 1
 #define FALSE 0
 
+#define INVALID_ID 4294967295U
+
 // platform windows
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32__)
 #define HPLATFORM_WINDOWS 1
@@ -70,6 +72,9 @@ typedef char b8;
 #endif
 #endif
 
+
+#define HCLAMP(value, min, max) ((value <= min) ? min : (value >= max) ? max \
+                                                                       : value)
 
 // Inline
 #ifdef _MSC_VER

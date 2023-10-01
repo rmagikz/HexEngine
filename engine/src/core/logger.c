@@ -68,7 +68,7 @@ void logger_log(log_level level, const char* message, ...)
     char out_message[32000];
     hzero_memory(out_message, sizeof(out_message));
 
-    __builtin_va_list arg_ptr;
+    va_list arg_ptr;
     va_start(arg_ptr, message);
     string_format_v(out_message, message, arg_ptr);
     va_end(arg_ptr);

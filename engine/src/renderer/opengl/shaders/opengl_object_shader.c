@@ -4,14 +4,20 @@
 
 #include "renderer/opengl/opengl_shader_utils.h"
 
+#include "renderer/opengl/opengl_buffer.h"
+
+#include "math/hmath.h"
+
 #define BUILTIN_SHADER_NAME_OBJECT "Builtin.ObjectShader"
 
-b8 opengl_object_shader_create(opengl_context* context, opengl_object_shader* out_shader)
+b8 opengl_object_shader_create(opengl_context* context, texture* default_diffuse, opengl_object_shader* out_shader)
 {
     char stage_type_strs[2][5] = {"vert", "frag"};
     u32 stage_types[2] = {GL_VERTEX_SHADER, GL_FRAGMENT_SHADER};
 
     out_shader->program_handle = glCreateProgram();
+
+    out_shader->default_diffuse = default_diffuse;
 
     for (u32 i = 0; i < 2; ++i)
     {
@@ -34,15 +40,45 @@ b8 opengl_object_shader_create(opengl_context* context, opengl_object_shader* ou
         glDeleteShader(out_shader->stages[i].shader_handle);
     }
 
+    opengl_buffer_create(context, GL_UNIFORM_BUFFER, GL_STATIC_DRAW, TRUE, &out_shader->global_uniform_buffer);
+    glBindBufferBase(GL_UNIFORM_BUFFER, 0, out_shader->global_uniform_buffer.handle);
+
+    opengl_buffer_create(context, GL_UNIFORM_BUFFER, GL_STATIC_DRAW, TRUE, &out_shader->object_uniform_buffer);
+    glBindBufferBase(GL_UNIFORM_BUFFER, 1, out_shader->object_uniform_buffer.handle);
+
     return TRUE;
 }
 
 void opengl_object_shader_destroy(opengl_context* context, struct opengl_object_shader* shader)
 {
-    
+    opengl_buffer_destroy(context, &shader->global_uniform_buffer);
+    opengl_buffer_destroy(context, &shader->object_uniform_buffer);
+    glDeleteProgram(shader->program_handle);
+    shader->program_handle = 0;
 }
 
 void opengl_object_shader_use(opengl_context* context, struct opengl_object_shader* shader)
 {
+    glUseProgram(shader->program_handle);
+}
 
+void opengl_object_shader_update_global_state(opengl_context* context, struct opengl_object_shader* shader, f32 delta_time)
+{
+    opengl_buffer_data(context, &shader->global_uniform_buffer, sizeof(global_uniform_object), &shader->global_ubo);
+}
+
+void opengl_object_shader_update_object(opengl_context* context, struct opengl_object_shader* shader, geometry_render_data data)
+{
+    glUniformMatrix4fv(2, 1, FALSE, &data.model);
+
+    object_uniform_object obo;
+
+    // static f32 accumulator = 0.0f;
+    // accumulator += context->frame_delta_time * 1000000.0f;
+    // f32 s = (hsin(accumulator) + 1.0f) / 2.0f;
+
+    f32 s = 1.0f;
+    obo.diffuse_color = vec4_create(s, s, s, 1.0f);
+
+    opengl_buffer_data(context, &shader->object_uniform_buffer, sizeof(object_uniform_object), &obo);
 }

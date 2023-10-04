@@ -21,7 +21,6 @@ void opengl_backend_update_object(geometry_render_data data);
 
 void opengl_backend_create_texture (
     const char* name,
-    b8 auto_release,
     i32 width,
     i32 height,
     i32 channel_count,

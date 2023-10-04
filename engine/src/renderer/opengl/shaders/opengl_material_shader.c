@@ -1,4 +1,4 @@
-#include "opengl_object_shader.h"
+#include "opengl_material_shader.h"
 
 #include "core/logger.h"
 
@@ -8,26 +8,26 @@
 
 #include "math/hmath.h"
 
-#define BUILTIN_SHADER_NAME_OBJECT "Builtin.ObjectShader"
+#include "systems/texture_system.h"
 
-b8 opengl_object_shader_create(opengl_context* context, texture* default_diffuse, opengl_object_shader* out_shader)
+#define BUILTIN_SHADER_NAME_MATERIAL "Builtin.MaterialShader"
+
+b8 opengl_material_shader_create(opengl_context* context, opengl_material_shader* out_shader)
 {
     char stage_type_strs[2][5] = {"vert", "frag"};
     u32 stage_types[2] = {GL_VERTEX_SHADER, GL_FRAGMENT_SHADER};
 
     out_shader->program_handle = glCreateProgram();
 
-    out_shader->default_diffuse = default_diffuse;
-
     for (u32 i = 0; i < 2; ++i)
     {
-        if (create_shader_module(context, BUILTIN_SHADER_NAME_OBJECT, stage_type_strs[i], stage_types[i], i, out_shader->stages))
+        if (create_shader_module(context, BUILTIN_SHADER_NAME_MATERIAL, stage_type_strs[i], stage_types[i], i, out_shader->stages))
         {
             glAttachShader(out_shader->program_handle, out_shader->stages[i].shader_handle);
         }
         else
         {
-            HERROR("Unable to create %s shader module for '%s'.", stage_type_strs[i], BUILTIN_SHADER_NAME_OBJECT);
+            HERROR("Unable to create %s shader module for '%s'.", stage_type_strs[i], BUILTIN_SHADER_NAME_MATERIAL);
             return FALSE;
         }
     }
@@ -49,7 +49,7 @@ b8 opengl_object_shader_create(opengl_context* context, texture* default_diffuse
     return TRUE;
 }
 
-void opengl_object_shader_destroy(opengl_context* context, struct opengl_object_shader* shader)
+void opengl_material_shader_destroy(opengl_context* context, struct opengl_material_shader* shader)
 {
     opengl_buffer_destroy(context, &shader->global_uniform_buffer);
     opengl_buffer_destroy(context, &shader->object_uniform_buffer);
@@ -57,19 +57,20 @@ void opengl_object_shader_destroy(opengl_context* context, struct opengl_object_
     shader->program_handle = 0;
 }
 
-void opengl_object_shader_use(opengl_context* context, struct opengl_object_shader* shader)
+void opengl_material_shader_use(opengl_context* context, struct opengl_material_shader* shader)
 {
     glUseProgram(shader->program_handle);
 }
 
-void opengl_object_shader_update_global_state(opengl_context* context, struct opengl_object_shader* shader, f32 delta_time)
+void opengl_material_shader_update_global_state(opengl_context* context, struct opengl_material_shader* shader, f32 delta_time)
 {
     opengl_buffer_data(context, &shader->global_uniform_buffer, sizeof(global_uniform_object), &shader->global_ubo);
 }
 
-void opengl_object_shader_update_object(opengl_context* context, struct opengl_object_shader* shader, geometry_render_data data)
+void opengl_material_shader_update_object(opengl_context* context, struct opengl_material_shader* shader, geometry_render_data data)
 {
-    glUniformMatrix4fv(2, 1, FALSE, &data.model);
+    glUniformMatrix4fv(2, 1, FALSE, (const GLfloat*)&data.model);
+    glUniform1i(4, data.textures[0]->handle - 1);
 
     object_uniform_object obo;
 

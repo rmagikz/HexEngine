@@ -1,5 +1,8 @@
 PLATFORM := unknown
 
+BUILD_DIR := bin
+OBJ_DIR := bin-obj
+
 ifeq ($(OS), Windows_NT)
 	PLATFORM := windows
 else

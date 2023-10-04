@@ -12,7 +12,7 @@
 
 #include "platform/platform.h"
 
-#include "shaders/opengl_object_shader.h"
+#include "shaders/opengl_material_shader.h"
 
 static opengl_context context;
 static b8 size_dirty_flag = FALSE;
@@ -62,7 +62,7 @@ b8 opengl_backend_initialize(renderer_backend* backend, const char* application_
 
     glClearColor(0.2f, 0.2f, 0.2, 1.0f);
 
-    if (!opengl_object_shader_create(&context, backend->default_diffuse, &context.object_shader))
+    if (!opengl_material_shader_create(&context, &context.material_shader))
     {
         HERROR("Error loading built-in basic_lighting shader.");
         return FALSE;
@@ -113,7 +113,7 @@ b8 opengl_backend_initialize(renderer_backend* backend, const char* application_
 
 void opengl_backend_shutdown(renderer_backend* backend)
 {
-    opengl_object_shader_destroy(&context, &context.object_shader);
+    opengl_material_shader_destroy(&context, &context.material_shader);
     platform_opengl_context_delete();
 
     HINFO("OpenGL renderer shut down successfully.");
@@ -143,12 +143,12 @@ b8 opengl_backend_begin_frame(renderer_backend* backend, f32 delta_time)
 
 void opengl_backend_update_global_state(mat4 projection, mat4 view, vec3 view_position, vec4 ambient_color, i32 mode)
 {
-    opengl_object_shader_use(&context, &context.object_shader);
+    opengl_material_shader_use(&context, &context.material_shader);
 
-    context.object_shader.global_ubo.projection = projection;
-    context.object_shader.global_ubo.view = view;
+    context.material_shader.global_ubo.projection = projection;
+    context.material_shader.global_ubo.view = view;
 
-    opengl_object_shader_update_global_state(&context, &context.object_shader, context.frame_delta_time);
+    opengl_material_shader_update_global_state(&context, &context.material_shader, context.frame_delta_time);
 }
 
 b8 opengl_backend_end_frame(renderer_backend* backend, f32 delta_time)
@@ -160,12 +160,11 @@ b8 opengl_backend_end_frame(renderer_backend* backend, f32 delta_time)
 
 void opengl_backend_update_object(geometry_render_data data)
 {
-    opengl_object_shader_update_object(&context, &context.object_shader, data);
+    opengl_material_shader_update_object(&context, &context.material_shader, data);
 }
 
 void opengl_backend_create_texture (
     const char* name,
-    b8 auto_release,
     i32 width,
     i32 height,
     i32 channel_count,
@@ -181,9 +180,9 @@ void opengl_backend_create_texture (
 
     u32 imagine_format = 0;
 
-    glGenTextures(1, &out_texture->id);
-    glBindTexture(GL_TEXTURE_2D, out_texture->id);
-    //glActiveTexture(GL_TEXTURE0);
+    glGenTextures(1, &out_texture->handle);
+    glActiveTexture((GL_TEXTURE0 - 1) + out_texture->handle);
+    glBindTexture(GL_TEXTURE_2D, out_texture->handle);
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -199,7 +198,8 @@ void opengl_backend_create_texture (
 
 void opengl_backend_destroy_texture (texture* texture)
 {
-    glDeleteTextures(1, &texture->id);
+    glDeleteTextures(1, &texture->handle);
+    texture->handle = INVALID_ID;
 }
 
 #ifdef _DEBUG // OpenGL Debug Callback

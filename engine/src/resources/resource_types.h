@@ -4,7 +4,7 @@
 
 typedef struct texture
 {
-    u32 id;
+    u32 handle;
     u32 width;
     u32 height;
     u8 channel_count;

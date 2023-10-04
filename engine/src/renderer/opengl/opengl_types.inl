@@ -23,7 +23,7 @@ typedef struct opengl_shader_stage
     char* shader_source;
 } opengl_shader_stage;
 
-typedef struct opengl_object_shader
+typedef struct opengl_material_shader
 {
     u32 program_handle;
     opengl_shader_stage stages[2];
@@ -32,9 +32,7 @@ typedef struct opengl_object_shader
     opengl_buffer global_uniform_buffer;
 
     opengl_buffer object_uniform_buffer;
-
-    texture* default_diffuse;
-} opengl_object_shader;
+} opengl_material_shader;
 
 typedef struct opengl_context
 {
@@ -45,5 +43,5 @@ typedef struct opengl_context
     opengl_buffer object_vertex_buffer;
     opengl_buffer object_index_buffer;
 
-    opengl_object_shader object_shader;
+    opengl_material_shader material_shader;
 } opengl_context;

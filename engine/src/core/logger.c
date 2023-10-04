@@ -73,7 +73,7 @@ void logger_log(log_level level, const char* message, ...)
     string_format_v(out_message, message, arg_ptr);
     va_end(arg_ptr);
 
-    string_format(out_message, "%s%s\n", log_level_strings[level], out_message);
+    string_format(out_message, "%s %s\n", log_level_strings[level], out_message);
 
     if (is_error)
     {

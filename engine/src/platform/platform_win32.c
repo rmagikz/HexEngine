@@ -106,6 +106,8 @@ b8 platform_initialize(u64* memory_requirement, void* state, const char* applica
 
     ShowWindow(state_ptr->hwnd, show_window_command_flags);
 
+    ShowWindow(GetConsoleWindow(), SW_HIDE);
+
     clock_setup();
 
     return TRUE;

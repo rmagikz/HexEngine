@@ -16,8 +16,8 @@
         return FALSE;                                                                                               \
     }
 
-#define expect_floats_to_be(expected, actual)                                                       \
-    if (kabs(expected - actual) > 0.001f)                                                           \
+#define expect_float_to_be(expected, actual)                                                       \
+    if (habs(expected - actual) > 0.001f)                                                           \
     {                                                                                               \
         HERROR("--> Expected %f, but got %f. File: %s:%d.", expected, actual, __FILE__, __LINE__);  \
         return FALSE;                                                                               \

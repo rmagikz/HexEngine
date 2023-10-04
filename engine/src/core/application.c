@@ -14,6 +14,8 @@
 
 #include "renderer/renderer_frontend.h"
 
+#include "systems/texture_system.h"
+
 typedef struct application_state
 {
     b8 is_running;
@@ -46,6 +48,8 @@ typedef struct application_state
 
     //u64 renderer_subsystem_memory_requirement;
     void* renderer_subsystem_state;
+
+    void* texture_system_state;
 } application_state;
 
 static application_state* app_state;
@@ -137,6 +141,17 @@ b8 application_initialize(program* program_inst)
     {
         HFATAL("Failed to initialize renderer subsystem. Shutting down.");
         return FALSE;
+    }
+
+    // Initialize texture system.
+    u64 texture_system_memory_requirement;
+    texture_system_config texture_system_config;
+    texture_system_config.max_texture_count = 65536;
+    texture_system_initialize(&texture_system_memory_requirement, 0, texture_system_config);
+    app_state->texture_system_state = linear_allocator_allocate(&app_state->systems_allocator, texture_system_memory_requirement);
+    if (!texture_system_initialize(&texture_system_memory_requirement, app_state->texture_system_state, texture_system_config))
+    {
+        HFATAL("Failed to initialize renderer subsystem. Shutting down.");
     }
 
     // Initialize client program.
@@ -231,6 +246,8 @@ b8 application_run()
 
     event_unregister(EVENT_APPLICATION_QUIT, 0, application_on_quit);
     event_unregister(EVENT_KEY_PRESSED, 0, application_on_key);
+
+    texture_system_shutdown(app_state->texture_system_state);
 
     renderer_shutdown(app_state->renderer_subsystem_state);
 

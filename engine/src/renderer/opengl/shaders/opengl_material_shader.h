@@ -11,4 +11,5 @@ void opengl_material_shader_use(opengl_context* context, struct opengl_material_
 
 void opengl_material_shader_update_global_state(opengl_context* context, struct opengl_material_shader* shader, f32 delta_time);
 
-void opengl_material_shader_update_object(opengl_context* context, struct opengl_material_shader* shader, geometry_render_data data);
+void opengl_material_shader_set_model(opengl_context* context, struct opengl_material_shader* shader, mat4 model);
+void opengl_material_shader_apply_material(opengl_context* context, struct opengl_material_shader* shader, material* material);

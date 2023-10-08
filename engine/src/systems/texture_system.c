@@ -32,6 +32,7 @@ static texture_system_state* state_ptr = 0;
 b8 create_default_textures(texture_system_state* state);
 void destroy_default_textures(texture_system_state* state);
 b8 load_texture(const char* texture_name, texture* t);
+void destroy_texture(texture* t);
 
 b8 texture_system_initialize(u64* memory_requirement, void* state, texture_system_config config)
 {
@@ -171,28 +172,28 @@ void texture_system_release(const char* name)
             return;
         }
 
+        char name_copy[TEXTURE_NAME_MAX_LENGTH];
+        string_ncopy(name_copy, name, TEXTURE_NAME_MAX_LENGTH);
+
         ref.reference_count--;
 
         if (ref.reference_count == 0 && ref.auto_release)
         {
             texture* t = &state_ptr->registered_textures[ref.index];
 
-            renderer_destroy_texture(t);
-
-            hzero_memory(t, sizeof(texture));
-            t->handle = INVALID_ID;
+            destroy_texture(t);
 
             ref.index = INVALID_ID;
             ref.auto_release = FALSE;
             
-            HTRACE("Released texture '%s'. Texture unloaded because reference count = 0 and auto_release = true", name);
+            HTRACE("Released texture '%s'. Texture unloaded because reference count = 0 and auto_release = true", name_copy);
         }
         else
         {
-            HTRACE("Released texture '%s'. Texture now has a reference count of '%i'. (auto_release = %s)", name, ref.reference_count, ref.auto_release ? "true" : "false");
+            HTRACE("Released texture '%s'. Texture now has a reference count of '%i'. (auto_release = %s)", name_copy, ref.reference_count, ref.auto_release ? "true" : "false");
         }
 
-        hashtable_set(&state_ptr->registered_texture_table, name, &ref);
+        hashtable_set(&state_ptr->registered_texture_table, name_copy, &ref);
     }
     else
     {
@@ -227,11 +228,16 @@ b8 load_texture(const char* texture_name, texture* t)
 
     texture temp_texture;
 
-    u8* data = stbi_load(full_file_path, (i32*)&temp_texture.width, (i32*)&temp_texture.height, (i32*)temp_texture.channel_count, required_channel_count);
+    u8* data = stbi_load(full_file_path, (i32*)&temp_texture.width, (i32*)&temp_texture.height, (i32*)&temp_texture.channel_count, required_channel_count);
 
     temp_texture.channel_count = required_channel_count;
 
-    if (!data) { HERROR("Unable to load texture at path: %s", full_file_path); }
+    if (!data) 
+    {
+        HERROR("Unable to load texture at path: %s", full_file_path);
+        stbi__err(0, 0);
+        return FALSE;
+    }
 
     u64 total_size = temp_texture.width * temp_texture.height * required_channel_count;
 
@@ -249,9 +255,15 @@ b8 load_texture(const char* texture_name, texture* t)
     if (stbi_failure_reason())
     {
         HWARN("load_texture() failed to load file '%s': %s", full_file_path, stbi_failure_reason());
+        stbi__err(0, 0);
+        return FALSE;
     }
 
-    renderer_create_texture(texture_name, temp_texture.width, temp_texture.height, temp_texture.channel_count, data, has_transparency, &temp_texture);
+    string_ncopy(temp_texture.name, texture_name, TEXTURE_NAME_MAX_LENGTH);
+    temp_texture.handle = INVALID_ID;
+    temp_texture.has_transparency = has_transparency;
+
+    renderer_create_texture(data, &temp_texture);
 
     texture old = *t;
 
@@ -300,7 +312,13 @@ b8 create_default_textures(texture_system_state* state)
         }
     }
 
-    renderer_create_texture(DEFAULT_TEXTURE_NAME, tex_dimension, tex_dimension, channels, pixels, FALSE, &state_ptr->default_texture);
+    string_ncopy(state->default_texture.name, DEFAULT_TEXTURE_NAME, TEXTURE_NAME_MAX_LENGTH);
+    state->default_texture.width = tex_dimension;
+    state->default_texture.height = tex_dimension;
+    state->default_texture.channel_count = 4;
+    state->default_texture.has_transparency = FALSE;
+
+    renderer_create_texture(pixels, &state_ptr->default_texture);
 
     return TRUE;
 }
@@ -309,6 +327,16 @@ void destroy_default_textures(texture_system_state* state)
 {
     if (state)
     {
-        renderer_destroy_texture(&state->default_texture);
+        destroy_texture(&state->default_texture);
     }
+}
+
+void destroy_texture(texture* t)
+{
+    renderer_destroy_texture(t);
+
+    hzero_memory(t->name, sizeof(char) * TEXTURE_NAME_MAX_LENGTH);
+    hzero_memory(t, sizeof(texture));
+
+    t->handle = INVALID_ID;
 }

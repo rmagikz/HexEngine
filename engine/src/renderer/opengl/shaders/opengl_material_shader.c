@@ -64,22 +64,27 @@ void opengl_material_shader_use(opengl_context* context, struct opengl_material_
 
 void opengl_material_shader_update_global_state(opengl_context* context, struct opengl_material_shader* shader, f32 delta_time)
 {
-    opengl_buffer_data(context, &shader->global_uniform_buffer, sizeof(global_uniform_object), &shader->global_ubo);
+    opengl_buffer_add_data(context, &shader->global_uniform_buffer, sizeof(global_uniform_object), &shader->global_ubo);
 }
 
-void opengl_material_shader_update_object(opengl_context* context, struct opengl_material_shader* shader, geometry_render_data data)
+void opengl_material_shader_set_model(opengl_context* context, struct opengl_material_shader* shader, mat4 model)
 {
-    glUniformMatrix4fv(2, 1, FALSE, (const GLfloat*)&data.model);
-    glUniform1i(4, data.textures[0]->handle - 1);
+    if (context && shader)
+    {
+        glUniformMatrix4fv(2, 1, FALSE, (const GLfloat*)&model);
+    }
+}
 
-    object_uniform_object obo;
+void opengl_material_shader_apply_material(opengl_context* context, struct opengl_material_shader* shader, material* material)
+{
+    if (context && shader)
+    {
+        glUniform1i(4, material->diffuse->handle - 1);
 
-    // static f32 accumulator = 0.0f;
-    // accumulator += context->frame_delta_time * 1000000.0f;
-    // f32 s = (hsin(accumulator) + 1.0f) / 2.0f;
+        material_uniform_object obo;
 
-    f32 s = 1.0f;
-    obo.diffuse_color = vec4_create(s, s, s, 1.0f);
+        obo.diffuse_color = material->diffuse_color;
 
-    opengl_buffer_data(context, &shader->object_uniform_buffer, sizeof(object_uniform_object), &obo);
+        opengl_buffer_add_data(context, &shader->object_uniform_buffer, sizeof(material_uniform_object), &obo);
+    }
 }

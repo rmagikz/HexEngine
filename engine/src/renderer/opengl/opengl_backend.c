@@ -14,6 +14,8 @@
 
 #include "shaders/opengl_material_shader.h"
 
+#include "systems/material_system.h"
+
 static opengl_context context;
 static b8 size_dirty_flag = FALSE;
 
@@ -54,13 +56,10 @@ b8 opengl_backend_initialize(renderer_backend* backend, const char* application_
 #endif
 
     glEnable(GL_CULL_FACE);
+    glClearColor(0.2f, 0.2f, 0.2, 1.0f);
 
     opengl_buffer_create(&context, GL_ARRAY_BUFFER, GL_STATIC_DRAW, TRUE, &context.object_vertex_buffer);
     opengl_buffer_create(&context, GL_ELEMENT_ARRAY_BUFFER, GL_STATIC_DRAW, TRUE, &context.object_index_buffer);
-
-    HINFO("OpenGL renderer initialized. Version: %s", glGetString(GL_VERSION));
-
-    glClearColor(0.2f, 0.2f, 0.2, 1.0f);
 
     if (!opengl_material_shader_create(&context, &context.material_shader))
     {
@@ -68,45 +67,12 @@ b8 opengl_backend_initialize(renderer_backend* backend, const char* application_
         return FALSE;
     }
 
-    vertex_3d verts[4];
+    for (u32 i = 0; i < OPENGL_MAX_GEOMETRY_COUNT; ++i)
+    {
+        context.geometries[i].id = INVALID_ID;
+    }
 
-    const f32 f = 10.0f;
-
-    verts[0].position.x = -0.5 * f;
-    verts[0].position.y = -0.5 * f;
-    verts[0].position.z = 0.0 * f;
-
-    verts[1].position.x = 0.5 * f;
-    verts[1].position.y = 0.5 * f;
-    verts[1].position.z = 0.0 * f;
-
-    verts[2].position.x = -0.5 * f;
-    verts[2].position.y = 0.5 * f;
-    verts[2].position.z = 0.0 * f;
-
-    verts[3].position.x = 0.5 * f;
-    verts[3].position.y = -0.5 * f;
-    verts[3].position.z = 0.0 * f;
-
-    verts[0].texcoord.x = 0.0f;
-    verts[0].texcoord.y = 0.0f;
-
-    verts[1].texcoord.x = 1.0f;
-    verts[1].texcoord.y = 1.0f;
-
-    verts[2].texcoord.x = 0.0f;
-    verts[2].texcoord.y = 1.0f;
-
-    verts[3].texcoord.x = 1.0;
-    verts[3].texcoord.y = 0.0f;
-
-    u32 indices[6] = {0, 1, 2, 0, 3, 1};
-
-    opengl_buffer_data(&context, &context.object_vertex_buffer, sizeof(verts), verts);
-    opengl_buffer_add_layout(&context, &context.object_vertex_buffer, 0, 3, GL_FLOAT, FALSE, sizeof(vertex_3d), 0);
-    opengl_buffer_add_layout(&context, &context.object_vertex_buffer, 1, 2, GL_FLOAT, FALSE, sizeof(vertex_3d), (const void*)sizeof(vec3));
-
-    opengl_buffer_data(&context, &context.object_index_buffer, sizeof(indices), indices);
+    HINFO("OpenGL renderer initialized. Version: %s", glGetString(GL_VERSION));
 
     return TRUE;
 }
@@ -153,36 +119,16 @@ void opengl_backend_update_global_state(mat4 projection, mat4 view, vec3 view_po
 
 b8 opengl_backend_end_frame(renderer_backend* backend, f32 delta_time)
 {
-    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-
     return platform_swap_buffers();
 }
 
-void opengl_backend_update_object(geometry_render_data data)
+void opengl_backend_create_texture (const u8* pixels, texture* texture)
 {
-    opengl_material_shader_update_object(&context, &context.material_shader, data);
-}
+    i32 image_size = texture->width * texture->height * texture->channel_count;
 
-void opengl_backend_create_texture (
-    const char* name,
-    i32 width,
-    i32 height,
-    i32 channel_count,
-    const u8* pixels,
-    b8 has_transparency,
-    texture* out_texture)
-{
-    out_texture->width = width;
-    out_texture->height = height;
-    out_texture->channel_count = channel_count;
-
-    i32 image_size = width * height * channel_count;
-
-    u32 imagine_format = 0;
-
-    glGenTextures(1, &out_texture->handle);
-    glActiveTexture((GL_TEXTURE0 - 1) + out_texture->handle);
-    glBindTexture(GL_TEXTURE_2D, out_texture->handle);
+    glGenTextures(1, &texture->handle);
+    glActiveTexture((GL_TEXTURE0 - 1) + texture->handle);
+    glBindTexture(GL_TEXTURE_2D, texture->handle);
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -193,13 +139,144 @@ void opengl_backend_create_texture (
     glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY, &aniso);
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY, aniso);
 
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, out_texture->width, out_texture->height, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, texture->width, texture->height, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
 }
 
 void opengl_backend_destroy_texture (texture* texture)
 {
     glDeleteTextures(1, &texture->handle);
     texture->handle = INVALID_ID;
+}
+
+b8 opengl_backend_create_geometry (geometry* geometry, u32 vertex_count, const vertex_3d* vertices, u32 index_count, const u32* indices)
+{
+    if (!vertex_count || !vertices)
+    {
+        HERROR("opengl_backend_create_geometry requires vertex data and none was supplied. vertex_count=%d, vertices=%p", vertex_count, vertices);
+        return FALSE;
+    }
+
+    b8 is_reupload = geometry->internal_id != INVALID_ID;
+    opengl_geometry_data old_range;
+
+    opengl_geometry_data* internal_data = 0;
+    if (is_reupload)
+    {
+        internal_data = &context.geometries[geometry->internal_id];
+
+        old_range.index_buffer_offset = internal_data->index_buffer_offset;
+        old_range.index_count = internal_data->index_count;
+        old_range.index_size = internal_data->index_size;
+        old_range.vertex_buffer_offset = internal_data->vertex_buffer_offset;
+        old_range.vertex_count = internal_data->vertex_count;
+        old_range.vertex_size = internal_data->vertex_size;
+    }
+    else
+    {
+        for (u32 i = 0; i < OPENGL_MAX_GEOMETRY_COUNT; ++i)
+        {
+            if (context.geometries[i].id == INVALID_ID)
+            {
+                geometry->internal_id = i;
+                context.geometries[i].id = i;
+                internal_data = &context.geometries[i];
+                break;
+            }
+        }
+    }
+
+    if (!internal_data)
+    {
+        HFATAL("opengl_backend_create_geometry failed to find a free index for a new geometry upload. Adjust config to allow for more.");
+        return FALSE;
+    }
+
+    internal_data->vertex_buffer_offset = context.geometry_vertex_offset;
+    internal_data->vertex_count = vertex_count;
+    internal_data->vertex_size = sizeof(vertex_3d) * vertex_count;
+    opengl_buffer_add_data(&context, &context.object_vertex_buffer, internal_data->vertex_size, vertices);
+    opengl_buffer_add_layout(&context, &context.object_vertex_buffer, 0, 3, GL_FLOAT, FALSE, sizeof(vertex_3d), 0);
+    opengl_buffer_add_layout(&context, &context.object_vertex_buffer, 1, 2, GL_FLOAT, FALSE, sizeof(vertex_3d), (const void*)sizeof(vec3));
+    context.geometry_vertex_offset += internal_data->vertex_size;
+
+    if (index_count && indices)
+    {
+        internal_data->index_buffer_offset = context.geometry_index_offset;
+        internal_data->index_count = index_count;
+        internal_data->index_size = sizeof(u32) * index_count;
+        opengl_buffer_add_data(&context, &context.object_index_buffer, internal_data->index_size, indices);
+        context.geometry_index_offset += internal_data->index_size;
+    }
+
+    if (is_reupload)
+    {
+        opengl_buffer_free_data();
+
+        if (old_range.index_size > 0)
+        {
+            opengl_buffer_free_data();
+        }
+    }
+
+    return TRUE;
+}
+
+void opengl_backend_destroy_geometry (geometry* geometry)
+{
+    if (geometry && geometry->internal_id != INVALID_ID)
+    {
+        opengl_geometry_data* internal_data = &context.geometries[geometry->internal_id];
+
+        opengl_buffer_free_data();
+
+        if (internal_data->index_size > 0)
+        {
+            opengl_buffer_free_data();
+        }
+
+        hzero_memory(internal_data, sizeof(opengl_geometry_data));
+        internal_data->id = INVALID_ID;
+    }
+}
+
+void opengl_backend_draw_geometry(geometry_render_data data)
+{
+    if (data.geometry && data.geometry->internal_id == INVALID_ID)
+    {
+        return;
+    }
+
+    opengl_geometry_data* buffer_data = &context.geometries[data.geometry->internal_id];
+
+    opengl_material_shader_use(&context, &context.material_shader);
+
+    opengl_material_shader_set_model(&context, &context.material_shader, data.model);
+
+    material* m = 0;
+
+    if (data.geometry->material)
+    {
+        m = data.geometry->material;
+    }
+    else
+    {
+        m = material_system_get_default();
+    }
+
+    opengl_material_shader_apply_material(&context, &context.material_shader, m);
+
+    glBindBuffer(context.object_vertex_buffer.type, context.object_vertex_buffer.handle);
+
+    if (buffer_data->index_count > 0)
+    {
+        glBindBuffer(context.object_index_buffer.type, context.object_index_buffer.handle);
+
+        glDrawElements(GL_TRIANGLES, buffer_data->index_count, GL_UNSIGNED_INT, 0);
+    }
+    else
+    {
+        glDrawArrays(GL_TRIANGLES, 0, buffer_data->vertex_count);
+    }
 }
 
 #ifdef _DEBUG // OpenGL Debug Callback

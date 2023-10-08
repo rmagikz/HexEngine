@@ -34,6 +34,18 @@ typedef struct opengl_material_shader
     opengl_buffer object_uniform_buffer;
 } opengl_material_shader;
 
+#define OPENGL_MAX_GEOMETRY_COUNT 4096
+typedef struct opengl_geometry_data
+{
+    u32 id;
+    u32 vertex_count;
+    u32 vertex_size;
+    u32 vertex_buffer_offset;
+    u32 index_count;
+    u32 index_size;
+    u32 index_buffer_offset;
+} opengl_geometry_data;
+
 typedef struct opengl_context
 {
     void* instance;
@@ -41,7 +53,13 @@ typedef struct opengl_context
     f32 frame_delta_time;
 
     opengl_buffer object_vertex_buffer;
+
     opengl_buffer object_index_buffer;
 
+    u64 geometry_vertex_offset;
+    u64 geometry_index_offset;
+
     opengl_material_shader material_shader;
+
+    opengl_geometry_data geometries[OPENGL_MAX_GEOMETRY_COUNT];
 } opengl_context;

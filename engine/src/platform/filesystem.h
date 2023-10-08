@@ -20,7 +20,7 @@ HAPI b8 filesystem_open(const char* path, file_modes mode, b8 binary, file_handl
 
 HAPI void filesystem_close(file_handle* handle);
 
-HAPI b8 filesystem_read_line(file_handle* handle, char** line_buf);
+HAPI b8 filesystem_read_line(file_handle* handle, u64 max_length, char** line_buf, u64* out_line_length);
 
 HAPI b8 filesystem_read_file(file_handle* handle, char** file_buf, u64* out_read);
 

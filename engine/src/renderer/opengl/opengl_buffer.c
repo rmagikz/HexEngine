@@ -12,10 +12,15 @@ void opengl_buffer_create(opengl_context* context, GLenum type, GLenum usage, b8
     }
 }
 
-void opengl_buffer_data(opengl_context* context, opengl_buffer* buffer, u64 size, const void* data)
+void opengl_buffer_add_data(opengl_context* context, opengl_buffer* buffer, u64 size, const void* data)
 {
     glBindBuffer(buffer->type, buffer->handle);
     glBufferData(buffer->type, size, data, buffer->usage);
+}
+
+void opengl_buffer_free_data()
+{
+    
 }
 
 void opengl_buffer_add_layout(opengl_context* context, opengl_buffer* buffer, u32 index, u32 count, GLenum type, b8 normalized, u32 stride, const void* pointer)

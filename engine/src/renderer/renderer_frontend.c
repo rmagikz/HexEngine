@@ -10,6 +10,7 @@
 #include "resources/resource_types.h"
 
 #include "systems/texture_system.h"
+#include "systems/material_system.h"
 
 // TODO: Temporary
 #include "core/hstring.h"
@@ -23,37 +24,9 @@ typedef struct renderer_system_state
     mat4 view;
     f32 near_clip;
     f32 far_clip;
-    
-    texture* test_diffuse;
 } renderer_system_state;
 
 static renderer_system_state* state_ptr;
-
-// TODO: Temporary
-b8 event_on_debug_event(u16 code, void* sender, void* listener_inst, event_context data)
-{
-    const char* names[3] = 
-    {
-        "armor",
-        "items",
-        "weapons"
-    };
-
-    static i8 choice = 2;
-
-    const char* old_name = names[choice];
-
-    choice++;
-    choice %= 3;
-
-    state_ptr->test_diffuse = texture_system_acquire(names[choice], FALSE);
-    HINFO("%i", state_ptr->test_diffuse->handle);
-
-    texture_system_release(old_name);
-
-    return TRUE;
-}
-// TODO: End temporary
 
 b8 renderer_initialize(u64* memory_requirement, void* state, const char* application_name)
 {
@@ -62,10 +35,6 @@ b8 renderer_initialize(u64* memory_requirement, void* state, const char* applica
     if (!state) return FALSE;
 
     state_ptr = state;
-
-    // TODO: Temporary
-    event_register(EVENT_DEBUG0, state_ptr, event_on_debug_event);
-    // TODO: End temporary
 
     renderer_backend_create(RENDERER_BACKEND_OPENGL, &state_ptr->backend);
     state_ptr->backend.frame_number = 0;
@@ -90,10 +59,6 @@ void renderer_shutdown(void* state)
 {
     if (state_ptr)
     {
-        // TODO: Temporary
-        event_unregister(EVENT_DEBUG0, state_ptr, event_on_debug_event);
-        // TODO: End temporary
-
         state_ptr->backend.shutdown(&state_ptr->backend);
     }
 
@@ -130,20 +95,11 @@ b8 renderer_draw_frame(render_packet* packet)
     {
         state_ptr->backend.update_global_state(state_ptr->projection, state_ptr->view, vec3_zero(), vec4_one(), 0);
 
-        mat4 model = mat4_identity();
-
-        geometry_render_data data = {};
-        data.object_id = 0;
-        data.model = model;
-
-        if (!state_ptr->test_diffuse)
+        u32 count = packet->geometry_count;
+        for (u32 i = 0; i < count; ++i)
         {
-            state_ptr->test_diffuse = texture_system_get_default_texture();
+            state_ptr->backend.draw_geometry(packet->geometries[i]);
         }
-
-        data.textures[0] = state_ptr->test_diffuse;
-
-        state_ptr->backend.update_object(data);
 
         if (!renderer_end_frame(packet->delta_time))
         {
@@ -160,19 +116,22 @@ void renderer_set_view(mat4 view)
     state_ptr->view = view;
 }
 
-void renderer_create_texture (
-    const char* name,
-    i32 width,
-    i32 height,
-    i32 channel_count,
-    const u8* pixels,
-    b8 has_transparency,
-    struct texture* out_texture)
+void renderer_create_texture (const u8* pixels, struct texture* texture)
 {
-    state_ptr->backend.create_texture(name, width, height, channel_count, pixels, has_transparency, out_texture);
+    state_ptr->backend.create_texture(pixels, texture);
 }
 
 void renderer_destroy_texture (struct texture* texture)
 {
     state_ptr->backend.destroy_texture(texture);
+}
+
+b8 renderer_create_geometry(geometry* geometry, u32 vertex_count, const vertex_3d* vertices, u32 index_count, const u32* indices)
+{
+    return state_ptr->backend.create_geometry(geometry, vertex_count, vertices, index_count, indices);
+}
+
+void renderer_destroy_geometry(geometry* geometry)
+{
+    state_ptr->backend.destroy_geometry(geometry);
 }

@@ -15,7 +15,7 @@ SRC_FILES := $(shell find $(ASSEMBLY) -name *.c)
 DIRECTORIES := $(shell find $(ASSEMBLY) -type d)
 OBJ_FILES := $(SRC_FILES:%=$(OBJ_DIR)/%.o)
 
-all: scaffold compile link post-build
+all: scaffold compile link
 
 .PHONY: scaffold
 scaffold:
@@ -33,13 +33,6 @@ link: scaffold $(OBJ_FILES)
 .PHONY: compile
 compile:
 	@echo Compiling...
-
-.PHONY: post-build
-post-build:
-	@echo Copying shaders...
-	@mkdir -p bin/assets
-	@cp -R assets bin/assets
-	@echo Build Finished.
 
 .PHONY: clean
 clean:

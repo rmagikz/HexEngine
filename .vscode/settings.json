@@ -15,7 +15,8 @@
     "logger.h": "c",
     "input.h": "c",
     "filesystem.h": "c",
-    "opengl_vertex_buffer.h": "c"
+    "opengl_vertex_buffer.h": "c",
+    "resource_system.h": "c"
   },
   "C_Cpp_Runner.msvcBatchPath": "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Auxiliary/Build/vcvarsall.bat",
   "C_Cpp_Runner.cCompilerPath": "gcc",

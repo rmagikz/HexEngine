@@ -2,6 +2,25 @@
 
 #include "math/math_types.h"
 
+typedef enum resource_type
+{
+    RESOURCE_TYPE_TEXT,
+    RESOURCE_TYPE_BINARY,
+    RESOURCE_TYPE_IMAGE,
+    RESOURCE_TYPE_MATERIAL,
+    RESOURCE_TYPE_STATIC_MESH,
+    RESOURCE_TYPE_CUSTOM
+} resource_type;
+
+typedef struct resource
+{
+    u32 loader_id;
+    const char* name;
+    char* full_path;
+    u64 data_size;
+    void* data;
+} resource;
+
 #define TEXTURE_NAME_MAX_LENGTH 512
 typedef struct texture
 {
@@ -14,11 +33,13 @@ typedef struct texture
     void* internal_data;
 } texture;
 
-typedef enum texture_use
+typedef struct image_resource_data
 {
-    TEXTURE_USE_UNKNOWN = 0x00,
-    TEXTURE_USEMAP_DIFFUSE = 0x01
-} texture_use;
+    u8 channel_count;
+    u32 width;
+    u32 height;
+    u8* pixels;
+} image_resource_data;
 
 #define MATERIAL_NAME_MAX_LENGTH 256
 typedef struct material
@@ -29,6 +50,14 @@ typedef struct material
     vec4 diffuse_color;
     texture* diffuse;
 } material;
+
+typedef struct material_resource_data
+{
+    char name[MATERIAL_NAME_MAX_LENGTH];
+    b8 auto_release;
+    vec4 diffuse_color;
+    char diffuse_name[TEXTURE_NAME_MAX_LENGTH];
+} material_resource_data;
 
 #define GEOMETRY_NAME_MAX_LENGTH 256
 typedef struct geometry

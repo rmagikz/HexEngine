@@ -50,8 +50,8 @@
       "args": [],
       "stopAtEntry": false,
       "externalConsole": true,
-      "cwd": "c:/Users/abrif/Desktop/graphics/engine/src/platform",
-      "program": "c:/Users/abrif/Desktop/graphics/engine/src/platform/build/Debug/outDebug",
+      "cwd": "c:/Users/abrif/Desktop/graphics/engine/src/core",
+      "program": "c:/Users/abrif/Desktop/graphics/engine/src/core/build/Debug/outDebug",
       "MIMode": "gdb",
       "miDebuggerPath": "gdb",
       "setupCommands": [

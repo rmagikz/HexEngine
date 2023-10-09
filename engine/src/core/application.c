@@ -17,6 +17,7 @@
 #include "systems/texture_system.h"
 #include "systems/material_system.h"
 #include "systems/geometry_system.h"
+#include "systems/resource_system.h"
 
 #include "math/hmath.h"
 
@@ -49,6 +50,9 @@ typedef struct application_state
 
     //u64 platform_subsystem_memory_requirement;
     void* platform_subsystem_state;
+
+    //u64 resource_system_memory_requirement;
+    void* resource_system_state;
 
     //u64 renderer_subsystem_memory_requirement;
     void* renderer_subsystem_state;
@@ -176,6 +180,19 @@ b8 application_initialize(program* program_inst)
         program_inst->app_config.start_height))
     {
         HERROR("Failed to initialize platform. Shutting down.");
+        return FALSE;
+    }
+
+    // Initialize resource system.
+    u64 resource_system_memory_requirement;
+    resource_system_config resource_system_config;
+    resource_system_config.asset_base_path = "../assets";
+    resource_system_config.max_loader_count = 32;
+    resource_system_initialize(&resource_system_memory_requirement, 0, resource_system_config);
+    app_state->resource_system_state = linear_allocator_allocate(&app_state->systems_allocator, resource_system_memory_requirement);
+    if (!resource_system_initialize(&resource_system_memory_requirement, app_state->resource_system_state, resource_system_config))
+    {
+        HFATAL("Failed to initialize resource system. Shutting down.");
         return FALSE;
     }
 
@@ -353,6 +370,8 @@ b8 application_run()
     logger_shutdown(app_state->logger_subsystem_state);
     event_shutdown(app_state->event_subsystem_state);
     input_shutdown(app_state->input_subsystem_state);
+
+    resource_system_shutdown(app_state->resource_system_state);
 
     platform_shutdown(&app_state->platform_subsystem_state);
 

@@ -18,7 +18,8 @@ static const char* memory_tag_strings[MEMORY_TAG_MAX_TAGS] =
     "PROGRAM    ",
     "RENDERER   ",
     "LINEAR_ALLC",
-    "TEXTURE    "
+    "TEXTURE    ",
+    "MATERIAL   "
 };
 
 struct memory_stats

@@ -4,7 +4,7 @@
 #include "core/hstring.h"
 #include "memory/hmemory.h"
 
-#include "platform/filesystem.h"
+#include "systems/resource_system.h"
 
 b8 validate_shader_module(opengl_context* context, const char* type_str, opengl_shader_stage* shader_stage)
 {
@@ -20,6 +20,8 @@ b8 validate_shader_module(opengl_context* context, const char* type_str, opengl_
         glGetShaderInfoLog(shader_stage->shader_handle, length, &length, message);
 
         HERROR("[OpenGL Shader] Error (%s shader) %s", type_str, message);
+
+        return FALSE;
     }
 
     HDEBUG("[OpenGL Shader] %s shader compiled successfully.", type_str);
@@ -30,40 +32,26 @@ b8 validate_shader_module(opengl_context* context, const char* type_str, opengl_
 b8 create_shader_module(opengl_context* context, const char* name, const char* type_str, u32 shader_stage_flag, u32 stage_index, opengl_shader_stage* shader_stages)
 {
     char file_name[512];
-    string_format(file_name, "assets/shaders/%s.%s.glsl", name, type_str);
+    string_format(file_name, "shaders/%s.%s.glsl", name, type_str);
 
-    file_handle handle;
-    if (!filesystem_open(file_name, FILE_MODE_READ, FALSE, &handle))
-    {
-        HERROR("Unable to open shader module: %s.", file_name);
-        return FALSE;
-    }
-
-    u64 size = 0;
-    char* file_buffer = 0;
-    if (!filesystem_read_file(&handle, &file_buffer, &size))
+    resource text_resource;
+    if (!resource_system_load(file_name, RESOURCE_TYPE_TEXT, &text_resource))
     {
         HERROR("Unable to read shader module: %s.", file_name);
         return FALSE;
     }
 
-    shader_stages[stage_index].shader_source = file_buffer;
-    shader_stages[stage_index].source_length = size;
-
-    filesystem_close(&handle);
+    shader_stages[stage_index].shader_source = text_resource.data;
+    shader_stages[stage_index].source_length = text_resource.data_size;
 
     shader_stages[stage_index].shader_handle = glCreateShader(shader_stage_flag);
 
-    glShaderSource(shader_stages[stage_index].shader_handle, 1, (const char* const*)&file_buffer, 0);
+    glShaderSource(shader_stages[stage_index].shader_handle, 1, (const char* const*)&text_resource.data, 0);
     glCompileShader(shader_stages[stage_index].shader_handle);
 
     validate_shader_module(context, type_str, &shader_stages[stage_index]);
 
-    if (file_buffer)
-    {
-        hfree(file_buffer, sizeof(u8) * size, MEMORY_TAG_STRING);
-        file_buffer = 0;
-    }
+    resource_system_unload(&text_resource);
 
     return TRUE;
 }

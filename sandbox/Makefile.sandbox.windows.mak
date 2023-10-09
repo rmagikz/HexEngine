@@ -16,7 +16,7 @@ SRC_FILES := $(call rwildcard,$(ASSEMBLY)/,*.c)
 DIRECTORIES := \$(ASSEMBLY)\src $(subst $(DIR),,$(shell dir $(ASSEMBLY)\src /S/ AD/ B | findstr /i src))
 OBJ_FILES := $(SRC_FILES:%=$(OBJ_DIR)/%.o)
 
-all: scaffold compile link post-build
+all: scaffold compile link
 
 .PHONY: scaffold
 scaffold:
@@ -33,10 +33,6 @@ link: scaffold $(OBJ_FILES)
 .PHONY: compile
 compile:
 	@echo Compiling...
-
-.PHONY: post-build
-post-build:
-	@echo Build Finished.
 
 .PHONY: clean
 clean:
